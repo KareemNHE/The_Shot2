@@ -9,6 +9,8 @@ class PostModel {
   final String imageUrl;
   final String caption;
   final DateTime timestamp;
+  final List<String> hashtags;
+  final String category;
 
   PostModel({
     required this.id,
@@ -17,6 +19,8 @@ class PostModel {
     required this.imageUrl,
     required this.caption,
     required this.timestamp,
+    required this.hashtags,
+    required this.category,
   });
 
   // Convert Firestore document to PostModel
@@ -28,6 +32,8 @@ class PostModel {
       imageUrl: data['imageUrl'] ?? '',
       caption: data['caption'] ?? '',
       timestamp: (data['timestamp'] as Timestamp).toDate(),
+      hashtags: List<String>.from(data['hashtags'] ?? []),
+      category: data['category'] ?? 'Uncategorized',
     );
   }
 }

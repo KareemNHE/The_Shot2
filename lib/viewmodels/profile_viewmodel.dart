@@ -30,13 +30,17 @@ class ProfileViewModel extends ChangeNotifier {
             .get();
 
         if (userDoc.exists) {
-          _username = userDoc['username'] ?? user.email!;
-          _profilePictureUrl = userDoc['profilePictureUrl']?.isNotEmpty == true
-              ? userDoc['profilePictureUrl']
+          final data = userDoc.data() ?? {};
+
+          _username = data['username'] ?? user.email!;
+          _profilePictureUrl = data['profile_picture']?.isNotEmpty == true
+              ? data['profile_picture']
               : 'assets/default_profile.png';
-          _bio = userDoc['bio'] ?? 'No bio available';
-          _followersCount = userDoc['followersCount'] ?? 0;
-          _followingCount = userDoc['followingCount'] ?? 0;
+          print('Fetched bio: ${data['bio']}');
+          _bio = (data['bio'] ?? '').isNotEmpty ? data['bio'] : '';
+          _followersCount = data['followersCount'] ?? 0;
+          _followingCount = data['followingCount'] ?? 0;
+
           await fetchUserPosts(user.uid);
         }
       }
@@ -48,16 +52,24 @@ class ProfileViewModel extends ChangeNotifier {
     }
   }
 
+
   Future<void> fetchUserPosts(String userId) async {
     try {
       final postsSnapshot = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(userId)
           .collection('posts')
-          .where('userId', isEqualTo: userId)
+          .orderBy('timestamp', descending: true)
           .get();
 
       _userPosts = postsSnapshot.docs
           .map((doc) => doc['imageUrl'] as String)
           .toList();
+
+      notifyListeners();
+
+      print("Fetched ${_userPosts.length} posts: $_userPosts"); // <-- ADD THIS
+      notifyListeners();
     } catch (e) {
       print('Error fetching user posts: $e');
     }

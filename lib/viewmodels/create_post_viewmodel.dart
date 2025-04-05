@@ -1,10 +1,12 @@
 // viewmodels/create_post_viewmodel.dart
 
+import 'dart:io';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-
 import 'home_viewmodel.dart';
 
 class CreatePostViewModel extends ChangeNotifier {
@@ -45,8 +47,9 @@ class CreatePostViewModel extends ChangeNotifier {
   Future<void> createPost({
     required String imageUrl,
     required String caption,
+    required String category,
     required BuildContext context,
-    required HomeViewModel homeViewModel, // Add homeViewModel parameter
+    required HomeViewModel homeViewModel,
   }) async {
     final trimmedCaption = caption.trim();
     if (trimmedCaption.isEmpty) {
@@ -56,11 +59,32 @@ class CreatePostViewModel extends ChangeNotifier {
       return;
     }
 
+    List<String> extractHashtags(String caption) {
+      final RegExp hashtagRegex = RegExp(r'\B#\w\w+');
+      return hashtagRegex.allMatches(caption).map((match) => match.group(0)!).toList();
+    }
+
     try {
       final userId = FirebaseAuth.instance.currentUser?.uid;
       if (userId == null) {
         print("Error: User is not logged in.");
         return;
+      }
+
+      final hashtags = extractHashtags(trimmedCaption);
+
+      String finalImageUrl = imageUrl;
+      if (!imageUrl.startsWith('https://')) {
+        final file = File(imageUrl);
+        if (!file.existsSync()) {
+          throw Exception('Image file does not exist');
+        }
+
+        final storageRef = FirebaseStorage.instance
+            .ref()
+            .child('posts/${DateTime.now().millisecondsSinceEpoch}.jpg');
+        final uploadTask = await storageRef.putFile(file);
+        finalImageUrl = await uploadTask.ref.getDownloadURL();
       }
 
       final postRef = FirebaseFirestore.instance
@@ -70,25 +94,25 @@ class CreatePostViewModel extends ChangeNotifier {
           .doc();
 
       final newPost = {
-        'imageUrl': imageUrl,
+        'imageUrl': finalImageUrl,
         'caption': trimmedCaption,
         'timestamp': FieldValue.serverTimestamp(),
+        'userId': userId,
+        'hashtags': hashtags,
+        'category': category,
       };
 
       await postRef.set(newPost);
-
-      // Fetch updated posts after creating
       homeViewModel.fetchPosts();
-
-      // Show notification and success message
       await showNotification();
+
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Post created successfully!')),
       );
     } catch (e) {
       print('Error creating post: $e');
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Failed to create post. Please try again.')),
+        SnackBar(content: Text('Failed to create post: $e')),
       );
     }
   }

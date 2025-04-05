@@ -5,9 +5,12 @@ import 'package:flutter/material.dart';
 import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:the_shot2/db/user_db.dart';
 import 'package:provider/provider.dart';
+import 'package:the_shot2/services/api_service.dart';
 import 'package:the_shot2/viewmodels/camera_viewmodel.dart';
 import 'package:the_shot2/viewmodels/edit_profile_viewmodel.dart';
 import 'package:the_shot2/viewmodels/profile_viewmodel.dart';
+import 'package:the_shot2/viewmodels/search_viewmodel.dart';
+import 'package:the_shot2/views/search_screen.dart';
 import 'viewmodels/create_post_viewmodel.dart';
 import 'viewmodels/captured_photo_viewmodel.dart';
 import 'viewmodels/post_viewmodel.dart';
@@ -43,6 +46,7 @@ class TheShot extends StatelessWidget {
         ChangeNotifierProvider(create: (context) => CameraViewModel()),
         ChangeNotifierProvider(create: (context) => ProfileViewModel()),
         ChangeNotifierProvider(create: (_) => EditProfileViewModel()),
+        ChangeNotifierProvider(create: (_) => SearchViewModel(apiService: ApiService()), child: const SearchScreen(),)
       ],
       child: MaterialApp(
         title: 'The Shot',

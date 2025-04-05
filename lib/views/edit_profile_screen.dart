@@ -1,7 +1,5 @@
 
 // views/edit_profile_screen.dart
-
-
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
@@ -84,7 +82,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Profile updated successfully!')),
         );
-        Navigator.pop(context); // Return to profile screen
+        Navigator.pop(context, true);
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Error updating profile. Please try again.')),
@@ -154,7 +152,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                     labelText: 'Bio',
                     border: OutlineInputBorder(),
                   ),
-                  maxLength: 150,
+                  maxLength: 100,
                   maxLines: 3,
                 ),
                 const SizedBox(height: 20),

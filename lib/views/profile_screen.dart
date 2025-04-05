@@ -41,10 +41,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
         ],
       ),
-      body: profileViewModel.isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : SafeArea(
+      body: RefreshIndicator(
+        onRefresh: () async {
+          await Provider.of<ProfileViewModel>(context, listen: false).fetchUserProfile();
+        },
         child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
           child: Column(
             children: [
               const SizedBox(height: 40),
@@ -53,7 +55,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 radius: 60,
                 backgroundImage: profileViewModel.profilePictureUrl.startsWith('http')
                     ? NetworkImage(profileViewModel.profilePictureUrl)
-                    : AssetImage(profileViewModel.profilePictureUrl) as ImageProvider,
+                    : const AssetImage('assets/default_profile.png') as ImageProvider,
               ),
               const SizedBox(height: 10),
               // Username
@@ -71,7 +73,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 child: Text(
                   profileViewModel.bio,
                   textAlign: TextAlign.center,
-                  style: const TextStyle(fontSize: 14, color: Colors.grey),
+                  style: const TextStyle(
+                      fontSize: 16,
+                      color: Colors.black
+                  ),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -114,21 +119,50 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   // User Posts Grid
   Widget _buildUserPostsGrid(List<String> posts) {
-    return GridView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 3,
-        crossAxisSpacing: 5,
-        mainAxisSpacing: 5,
+    print("Rendering user post grid with ${posts.length} posts"); // <-- Add this
+
+    if (posts.isEmpty) {
+      return const Padding(
+        padding: EdgeInsets.only(top: 40),
+        child: Text(
+          'No posts yet.',
+          style: TextStyle(fontSize: 16, color: Colors.grey),
+        ),
+      );
+    }
+
+    return Padding(
+      padding: const EdgeInsets.all(10.0),
+      child: GridView.builder(
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        itemCount: posts.length,
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 3,
+          crossAxisSpacing: 5,
+          mainAxisSpacing: 5,
+          childAspectRatio: 1,
+        ),
+        itemBuilder: (context, index) {
+          return ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: Image.network(
+              posts[index],
+              fit: BoxFit.cover,
+              loadingBuilder: (context, child, loadingProgress) {
+                if (loadingProgress == null) return child;
+                return Container(
+                  color: Colors.grey[300],
+                  child: const Center(
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                );
+              },
+              errorBuilder: (context, error, stackTrace) => const Icon(Icons.error),
+            ),
+          );
+        },
       ),
-      itemCount: posts.length,
-      itemBuilder: (context, index) {
-        return Image.network(
-          posts[index],
-          fit: BoxFit.cover,
-        );
-      },
     );
   }
 
@@ -150,7 +184,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 );
                 // Refetch the profile after editing
                 if (result == true) {
-                  await Provider.of<ProfileViewModel>(context, listen: false).fetchUserProfile();
+                  await Provider.of<ProfileViewModel>(context, listen: false)
+                      .fetchUserProfile();
+                  setState(() {}); // Force re-render
                 }
               }),
               _buildMenuItem(Icons.help, 'Help', () {}),

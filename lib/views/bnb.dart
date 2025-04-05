@@ -29,7 +29,7 @@ class _BottomNavBarState extends State<BottomNavBar> {
 
   List<Widget> pages = [
     HomeScreen(), // Pass the appropriate viewModel
-    SearchScreen(viewModel: SearchViewModel(apiService: ApiService())), // Pass the appropriate viewModel
+    SearchScreen(), // Pass the appropriate viewModel
     PostScreen(), // Pass the appropriate viewModel
     MarketScreen(viewModel: MarketViewModel(apiService: ApiService())), // Pass the appropriate viewModel
     ProfileScreen(), // Pass the appropriate viewModel
