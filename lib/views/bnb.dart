@@ -19,50 +19,61 @@ import 'package:the_shot2/views/user_profile_screen.dart';
 
 class BottomNavBar extends StatefulWidget {
   final int initialPage;
-  final String? userId; // optional
 
-  const BottomNavBar({this.initialPage = 0, this.userId, Key? key}) : super(key: key);
+  const BottomNavBar({this.initialPage = 0, Key? key}) : super(key: key);
 
   @override
   State<BottomNavBar> createState() => _BottomNavBarState();
 }
 
 class _BottomNavBarState extends State<BottomNavBar> {
-  late int currentPageIndex;
-  late List<Widget> pages;
+  int _currentIndex = 0;
 
-  @override
-  void initState() {
-    super.initState();
+  final List<GlobalKey<NavigatorState>> _navigatorKeys = List.generate(
+    5,
+        (_) => GlobalKey<NavigatorState>(),
+  );
 
-    currentPageIndex = widget.initialPage;
+  final List<Widget> _screens = [
+    HomeScreen(),
+    const SearchScreen(),
+    const PostScreen(),
+    MarketScreen(viewModel: MarketViewModel(apiService: ApiService())),
+    const ProfileScreen(),
+  ];
 
-    pages = [
-      HomeScreen(),
-      const SearchScreen(),
-      const PostScreen(),
-      MarketScreen(viewModel: MarketViewModel(apiService: ApiService())),
-      const ProfileScreen(),
-      widget.userId != null && widget.userId != FirebaseAuth.instance.currentUser?.uid
-          ? UserProfileScreen(userId: widget.userId!)
-          : const ProfileScreen(), // fallback to your own profile
-    ];
+  void _onTap(int index) {
+    if (_currentIndex == index) {
+      // If already on tab, pop to first route
+      _navigatorKeys[index].currentState?.popUntil((route) => route.isFirst);
+    } else {
+      setState(() => _currentIndex = index);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      body: IndexedStack(
+        index: _currentIndex,
+        children: List.generate(_screens.length, (index) {
+          return Navigator(
+            key: _navigatorKeys[index],
+            onGenerateRoute: (settings) {
+              return MaterialPageRoute(
+                builder: (_) => _screens[index],
+              );
+            },
+          );
+        }),
+      ),
       bottomNavigationBar: BottomNavigationBar(
         type: BottomNavigationBarType.fixed,
         selectedItemColor: const Color(0xFFCB7CCB),
         backgroundColor: Colors.grey[100],
         unselectedItemColor: Colors.grey[600],
-        currentIndex: currentPageIndex,
-        onTap: (index) {
-          setState(() {
-            currentPageIndex = index;
-          });
-        },
+        currentIndex: _currentIndex,
+        onTap: _onTap,
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
           BottomNavigationBarItem(icon: Icon(Icons.search), label: 'Search'),
@@ -71,8 +82,8 @@ class _BottomNavBarState extends State<BottomNavBar> {
           BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
         ],
       ),
-      body: pages[currentPageIndex],
     );
   }
 }
+
 

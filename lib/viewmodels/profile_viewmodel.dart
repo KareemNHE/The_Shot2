@@ -38,10 +38,22 @@ class ProfileViewModel extends ChangeNotifier {
           _profilePictureUrl = data['profile_picture']?.isNotEmpty == true
               ? data['profile_picture']
               : 'assets/default_profile.png';
-          print('Fetched bio: ${data['bio']}');
           _bio = (data['bio'] ?? '').isNotEmpty ? data['bio'] : '';
-          _followersCount = data['followersCount'] ?? 0;
-          _followingCount = data['followingCount'] ?? 0;
+
+          // Fetch counts directly from subcollections (for consistency with other profiles)
+          final followersSnapshot = await FirebaseFirestore.instance
+              .collection('users')
+              .doc(user.uid)
+              .collection('followers')
+              .get();
+          final followingSnapshot = await FirebaseFirestore.instance
+              .collection('users')
+              .doc(user.uid)
+              .collection('following')
+              .get();
+
+          _followersCount = followersSnapshot.size;
+          _followingCount = followingSnapshot.size;
 
           await fetchUserPosts(user.uid);
         }
@@ -53,6 +65,7 @@ class ProfileViewModel extends ChangeNotifier {
       notifyListeners();
     }
   }
+
 
   Future<void> fetchUserPosts(String userId) async {
     try {

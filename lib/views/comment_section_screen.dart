@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/comment_model.dart';
+import '../viewmodels/comment_interaction_viewmodel.dart';
 import '../viewmodels/comment_viewmodel.dart';
 
 class CommentSection extends StatelessWidget {
@@ -32,17 +33,56 @@ class CommentSection extends StatelessWidget {
                     itemCount: viewModel.comments.length,
                     itemBuilder: (context, index) {
                       final comment = viewModel.comments[index];
-                      return ListTile(
-                        leading: CircleAvatar(
-                          backgroundImage: comment.userProfilePic.isNotEmpty
-                              ? NetworkImage(comment.userProfilePic)
-                              : const AssetImage('assets/default_profile.png') as ImageProvider,
+                      return ChangeNotifierProvider(
+                        create: (_) => CommentInteractionViewModel(
+                          postId: postId,
+                          commentId: comment.id,
                         ),
-                        title: Text(comment.username),
-                        subtitle: Text(comment.text),
-                        trailing: Text(
-                          TimeOfDay.fromDateTime(comment.timestamp).format(context),
-                          style: const TextStyle(fontSize: 12),
+                        child: Consumer<CommentInteractionViewModel>(
+                          builder: (context, commentViewModel, _) {
+                            return ListTile(
+                              leading: CircleAvatar(
+                                backgroundImage:
+                                    comment.userProfilePic.isNotEmpty
+                                        ? NetworkImage(comment.userProfilePic)
+                                        : const AssetImage(
+                                                'assets/default_profile.png')
+                                            as ImageProvider,
+                              ),
+                              title: Text(comment.username),
+                              subtitle: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(comment.text),
+                                  Row(
+                                    children: [
+                                      Text(
+                                        TimeOfDay.fromDateTime(
+                                                comment.timestamp)
+                                            .format(context),
+                                        style: const TextStyle(fontSize: 12),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      GestureDetector(
+                                        onTap: () =>
+                                            commentViewModel.toggleLike(),
+                                        child: Icon(
+                                          commentViewModel.isLiked
+                                              ? Icons.favorite
+                                              : Icons.favorite_border,
+                                          size: 16,
+                                          color: Colors.red,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 4),
+                                      Text('${commentViewModel.likeCount}',
+                                          style: const TextStyle(fontSize: 12)),
+                                    ],
+                                  )
+                                ],
+                              ),
+                            );
+                          },
                         ),
                       );
                     },
@@ -70,11 +110,12 @@ class _CommentInputField extends StatefulWidget {
 class _CommentInputFieldState extends State<_CommentInputField> {
   final TextEditingController _controller = TextEditingController();
 
-  void _submitComment() {
+  void _submitComment() async {
     final text = _controller.text.trim();
     if (text.isNotEmpty) {
-      Provider.of<CommentViewModel>(context, listen: false).addComment(text);
-      _controller.clear();
+      await Provider.of<CommentViewModel>(context, listen: false)
+          .addComment(text);
+      Navigator.pop(context); // Dismiss the bottom sheet
     }
   }
 
@@ -101,6 +142,84 @@ class _CommentInputFieldState extends State<_CommentInputField> {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+
+class CommentSectionSheet extends StatelessWidget {
+  final String postId;
+  final ScrollController scrollController;
+
+  const CommentSectionSheet({required this.postId, required this.scrollController, Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return ChangeNotifierProvider(
+      create: (_) => CommentViewModel(postId: postId),
+      child: Consumer<CommentViewModel>(
+        builder: (context, viewModel, _) {
+          return Column(
+            children: [
+              Expanded(
+                child: viewModel.isLoading
+                    ? const Center(child: CircularProgressIndicator())
+                    : ListView.builder(
+                  controller: scrollController,
+                  itemCount: viewModel.comments.length,
+                  itemBuilder: (context, index) {
+                    final comment = viewModel.comments[index];
+                    return ChangeNotifierProvider(
+                      create: (_) => CommentInteractionViewModel(
+                        postId: postId,
+                        commentId: comment.id,
+                      ),
+                      child: Consumer<CommentInteractionViewModel>(
+                        builder: (context, commentViewModel, _) {
+                          return ListTile(
+                            leading: CircleAvatar(
+                              backgroundImage: comment.userProfilePic.isNotEmpty
+                                  ? NetworkImage(comment.userProfilePic)
+                                  : const AssetImage('assets/default_profile.png') as ImageProvider,
+                            ),
+                            title: Text(comment.username),
+                            subtitle: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(comment.text),
+                                Row(
+                                  children: [
+                                    Text(
+                                      TimeOfDay.fromDateTime(comment.timestamp).format(context),
+                                      style: const TextStyle(fontSize: 12),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    GestureDetector(
+                                      onTap: () => commentViewModel.toggleLike(),
+                                      child: Icon(
+                                        commentViewModel.isLiked ? Icons.favorite : Icons.favorite_border,
+                                        size: 16,
+                                        color: Colors.red,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Text('${commentViewModel.likeCount}', style: const TextStyle(fontSize: 12)),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
+                    );
+                  },
+                ),
+              ),
+              _CommentInputField(postId: postId),
+            ],
+          );
+        },
       ),
     );
   }

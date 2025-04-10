@@ -1,14 +1,13 @@
 // views/profile_screen.dart
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:provider/provider.dart';
 import 'package:the_shot2/views/edit_profile_screen.dart';
 import 'package:the_shot2/views/login_screen.dart';
 import 'package:the_shot2/viewmodels/profile_viewmodel.dart';
-import 'package:the_shot2/viewmodels/edit_profile_viewmodel.dart';
-import 'package:the_shot2/views/edit_profile_screen.dart';
 import 'package:the_shot2/views/post_detail_screen.dart';
-
+import 'package:the_shot2/views/user_list_screen.dart';
 import '../models/post_models.dart';
 
 
@@ -86,14 +85,72 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
               const SizedBox(height: 20),
               // Follower & Following Count
+              // Follower & Following Count
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  _buildStatColumn('Followers', profileViewModel.followersCount),
-                  const SizedBox(width: 20),
-                  _buildStatColumn('Following', profileViewModel.followingCount),
+                  GestureDetector(
+                    onTap: () async {
+                      final snapshot = await FirebaseFirestore.instance
+                          .collection('users')
+                          .doc(FirebaseAuth.instance.currentUser!.uid)
+                          .collection('followers')
+                          .get();
+
+                      final ids = snapshot.docs.map((doc) => doc.id).toList();
+
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => UserListScreen(
+                            title: "Followers",
+                            userIds: ids,
+                          ),
+                        ),
+                      );
+                    },
+                    child: Column(
+                      children: [
+                        Text('${profileViewModel.followersCount}',
+                            style: const TextStyle(fontWeight: FontWeight.bold)),
+                        const Text('Followers'),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(width: 30),
+
+                  GestureDetector(
+                    onTap: () async {
+                      final snapshot = await FirebaseFirestore.instance
+                          .collection('users')
+                          .doc(FirebaseAuth.instance.currentUser!.uid)
+                          .collection('following')
+                          .get();
+
+                      final ids = snapshot.docs.map((doc) => doc.id).toList();
+
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => UserListScreen(
+                            title: "Following",
+                            userIds: ids,
+                          ),
+                        ),
+                      );
+                    },
+                    child: Column(
+                      children: [
+                        Text('${profileViewModel.followingCount}',
+                            style: const TextStyle(fontWeight: FontWeight.bold)),
+                        const Text('Following'),
+                      ],
+                    ),
+                  ),
                 ],
               ),
+
               const SizedBox(height: 20),
               // User Posts Grid
               _buildUserPostsGrid(profileViewModel.userPosts),

@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../viewmodels/home_viewmodel.dart';
+import 'message_screen.dart';
 import 'widgets/post_card.dart';
 
 class HomeScreen extends StatelessWidget {
@@ -21,8 +22,14 @@ class HomeScreen extends StatelessWidget {
           ),
           IconButton(
             icon: const Icon(Icons.messenger_rounded),
-            onPressed: () {},
-          )
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const MessagesScreen()),
+              );
+            },
+          ),
+
         ],
       ),
       body: Consumer<HomeViewModel>(

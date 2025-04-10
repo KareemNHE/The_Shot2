@@ -10,6 +10,7 @@ import 'package:the_shot2/viewmodels/camera_viewmodel.dart';
 import 'package:the_shot2/viewmodels/edit_profile_viewmodel.dart';
 import 'package:the_shot2/viewmodels/profile_viewmodel.dart';
 import 'package:the_shot2/viewmodels/search_viewmodel.dart';
+import 'package:the_shot2/views/bnb.dart';
 import 'package:the_shot2/views/search_screen.dart';
 import 'viewmodels/create_post_viewmodel.dart';
 import 'viewmodels/captured_photo_viewmodel.dart';
@@ -51,8 +52,13 @@ class TheShot extends StatelessWidget {
       child: MaterialApp(
         title: 'The Shot',
         theme: ThemeData(useMaterial3: true),
-        home: Login(), //Make sure this is your login screen
+        debugShowCheckedModeBanner: false,
+        home: Login(), // Show login screen first
+        routes: {
+          '/home': (_) => const BottomNavBar(),
+        },
       ),
+
     );
   }
 }

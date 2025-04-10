@@ -12,7 +12,7 @@ import '../models/post_models.dart';
 class UserProfileScreen extends StatelessWidget {
   final String userId;
 
-  const UserProfileScreen({super.key, required this.userId});
+  const UserProfileScreen({Key? key, required this.userId}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {

@@ -1,4 +1,3 @@
-
 //viewmodel/home_viewmodel.dart
 
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -22,7 +21,6 @@ class HomeViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-
   Future<void> fetchPosts() async {
     final currentUserId = FirebaseAuth.instance.currentUser?.uid;
     if (currentUserId == null) return;
@@ -44,10 +42,25 @@ class HomeViewModel extends ChangeNotifier {
             .orderBy('timestamp', descending: true)
             .get();
 
-        allFetchedPosts.addAll(snapshot.docs.map((doc) =>
-            PostModel.fromFirestore(doc.data() as Map<String, dynamic>, doc.id)));
-      }
+        final userDoc =
+            await FirebaseFirestore.instance.collection('users').doc(id).get();
+        final userData = userDoc.data();
 
+        allFetchedPosts.addAll(snapshot.docs.map((doc) {
+          final postData = doc.data() as Map<String, dynamic>;
+          return PostModel(
+            id: doc.id,
+            userId: id,
+            username: userData?['username'] ?? 'Unknown',
+            userProfilePic: userData?['profile_picture'] ?? '',
+            imageUrl: postData['imageUrl'],
+            caption: postData['caption'],
+            timestamp: (postData['timestamp'] as Timestamp).toDate(),
+            hashtags: List<String>.from(postData['hashtags'] ?? []),
+            category: postData['category'] ?? 'Uncategorized',
+          );
+        }));
+      }
       allFetchedPosts.sort((a, b) => b.timestamp.compareTo(a.timestamp));
       _posts = allFetchedPosts;
     } catch (e) {

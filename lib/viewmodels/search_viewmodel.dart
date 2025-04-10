@@ -33,7 +33,7 @@ class SearchViewModel extends ChangeNotifier {
           .orderBy('timestamp', descending: true)
           .get();
 
-      _allPosts = postsSnapshot.docs.map((doc) {
+      List<PostModel> tempPosts = postsSnapshot.docs.map((doc) {
         return PostModel.fromFirestore(doc.data() as Map<String, dynamic>, doc.id);
       }).toList();
 
@@ -49,8 +49,28 @@ class SearchViewModel extends ChangeNotifier {
         );
       }).toList();
 
+      final Map<String, dynamic> userMap = {
+        for (var user in usersSnapshot.docs)
+          user.id: user.data(),
+      };
+
+      _allPosts = tempPosts.map((post) {
+        final userData = userMap[post.userId];
+        return PostModel(
+          id: post.id,
+          userId: post.userId,
+          username: userData?['username'] ?? 'Unknown',
+          userProfilePic: userData?['profile_picture'] ?? '',
+          imageUrl: post.imageUrl,
+          caption: post.caption,
+          timestamp: post.timestamp,
+          hashtags: post.hashtags,
+          category: post.category,
+        );
+      }).toList();
+
       _filteredPosts = List.from(_allPosts);
-      _filteredUsers = [];
+      _filteredUsers = List.from(_allUsers);
     } catch (e) {
       print('Error fetching search posts: $e');
     }
@@ -58,6 +78,7 @@ class SearchViewModel extends ChangeNotifier {
     _isLoading = false;
     notifyListeners();
   }
+
 
   void search(String query) {
     final lowerQuery = query.toLowerCase();

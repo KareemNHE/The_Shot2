@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 class PostModel {
   final String id;
+  final String userId;
   final String username;
   final String userProfilePic;
   final String imageUrl;
@@ -14,6 +15,7 @@ class PostModel {
 
   PostModel({
     required this.id,
+    required this.userId,
     required this.username,
     required this.userProfilePic,
     required this.imageUrl,
@@ -27,6 +29,7 @@ class PostModel {
   factory PostModel.fromFirestore(Map<String, dynamic> data, String id) {
     return PostModel(
       id: id,
+      userId: data['userId'] ?? '',
       username: data['username'] ?? 'Unknown User',
       userProfilePic: data['userProfilePic'] ?? '',
       imageUrl: data['imageUrl'] ?? '',

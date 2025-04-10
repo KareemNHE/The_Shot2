@@ -28,7 +28,8 @@ class CommentViewModel extends ChangeNotifier {
           .orderBy('timestamp', descending: true)
           .get();
 
-      _comments = snapshot.docs.map((doc) => CommentModel.fromFirestore(doc)).toList();
+      _comments =
+          snapshot.docs.map((doc) => CommentModel.fromFirestore(doc)).toList();
     } catch (e) {
       print('Error fetching comments: $e');
     }
@@ -41,7 +42,10 @@ class CommentViewModel extends ChangeNotifier {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
 
-    final userDoc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
+    final userDoc = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(user.uid)
+        .get();
     final userData = userDoc.data() ?? {};
 
     final commentData = {

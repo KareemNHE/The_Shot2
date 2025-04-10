@@ -37,9 +37,7 @@ class _LoginState extends State<Login> {
 
     if (user != null) {
       print("User successfully logged in with UID: ${user.uid}");
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (context) => BottomNavBar()),
-      );
+      Navigator.pushReplacementNamed(context, '/home');
     } else {
       _showError('Invalid username/email or password');
     }
