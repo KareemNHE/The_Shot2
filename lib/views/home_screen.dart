@@ -35,14 +35,15 @@ class HomeScreen extends StatelessWidget {
             return const Center(child: Text('No posts available.'));
           }
 
-          return ListView.builder(
-            itemCount: homeViewModel.posts.length,
-            itemBuilder: (context, index) {
-              final post = homeViewModel.posts[index];
-              print('Rendering post: ${post.caption}');
-
-              return PostCard(post: post);
-            },
+          return RefreshIndicator(
+            onRefresh: () => homeViewModel.fetchPosts(),
+            child: ListView.builder(
+              itemCount: homeViewModel.posts.length,
+              itemBuilder: (context, index) {
+                final post = homeViewModel.posts[index];
+                return PostCard(post: post);
+              },
+            ),
           );
         },
       ),

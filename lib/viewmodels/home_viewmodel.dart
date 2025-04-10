@@ -24,34 +24,32 @@ class HomeViewModel extends ChangeNotifier {
 
 
   Future<void> fetchPosts() async {
-    String? uid = FirebaseAuth.instance.currentUser?.uid;
-    if (uid == null) {
-      print("User is not authenticated.");
-    } else {
-      print("Fetching posts for UID: $uid");
-    }
+    final currentUserId = FirebaseAuth.instance.currentUser?.uid;
+    if (currentUserId == null) return;
 
     _isLoading = true;
     notifyListeners();
 
     try {
-      // Fetch posts from the specific user
-      QuerySnapshot querySnapshot = await FirebaseFirestore.instance
-          .collection('users')
-          .doc(uid) // Fetch posts for the logged-in user
-          .collection('posts')
-          .orderBy('timestamp', descending: true)
-          .get();
+      final followedIds = await getFollowedUserIds();
+      followedIds.add(currentUserId); // include own posts
 
-      if (querySnapshot.docs.isEmpty) {
-        print('No posts found!');
-      } else {
-        print('Fetched ${querySnapshot.docs.length} posts!');
+      List<PostModel> allFetchedPosts = [];
+
+      for (final id in followedIds) {
+        final snapshot = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(id)
+            .collection('posts')
+            .orderBy('timestamp', descending: true)
+            .get();
+
+        allFetchedPosts.addAll(snapshot.docs.map((doc) =>
+            PostModel.fromFirestore(doc.data() as Map<String, dynamic>, doc.id)));
       }
 
-      _posts = querySnapshot.docs
-          .map((doc) => PostModel.fromFirestore(doc.data() as Map<String, dynamic>, doc.id))
-          .toList();
+      allFetchedPosts.sort((a, b) => b.timestamp.compareTo(a.timestamp));
+      _posts = allFetchedPosts;
     } catch (e) {
       print('Error fetching posts: $e');
     }

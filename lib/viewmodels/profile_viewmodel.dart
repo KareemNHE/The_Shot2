@@ -2,6 +2,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:the_shot2/models/post_models.dart';
 
 class ProfileViewModel extends ChangeNotifier {
   String _username = '';
@@ -9,15 +10,16 @@ class ProfileViewModel extends ChangeNotifier {
   String _bio = '';
   int _followersCount = 0;
   int _followingCount = 0;
-  List<String> _userPosts = [];
+  List<PostModel> _userPosts = [];
   bool _isLoading = true;
+
 
   String get username => _username;
   String get profilePictureUrl => _profilePictureUrl;
   String get bio => _bio;
   int get followersCount => _followersCount;
   int get followingCount => _followingCount;
-  List<String> get userPosts => _userPosts;
+  List<PostModel> get userPosts => _userPosts;
   bool get isLoading => _isLoading;
 
   Future<void> fetchUserProfile() async {
@@ -52,7 +54,6 @@ class ProfileViewModel extends ChangeNotifier {
     }
   }
 
-
   Future<void> fetchUserPosts(String userId) async {
     try {
       final postsSnapshot = await FirebaseFirestore.instance
@@ -62,13 +63,11 @@ class ProfileViewModel extends ChangeNotifier {
           .orderBy('timestamp', descending: true)
           .get();
 
-      _userPosts = postsSnapshot.docs
-          .map((doc) => doc['imageUrl'] as String)
-          .toList();
+      _userPosts = postsSnapshot.docs.map((doc) {
+        return PostModel.fromFirestore(doc.data() as Map<String, dynamic>, doc.id);
+      }).toList();
 
-      notifyListeners();
-
-      print("Fetched ${_userPosts.length} posts: $_userPosts"); // <-- ADD THIS
+      print("Fetched ${_userPosts.length} posts");
       notifyListeners();
     } catch (e) {
       print('Error fetching user posts: $e');
