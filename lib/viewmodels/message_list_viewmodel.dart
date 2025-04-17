@@ -4,20 +4,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import '../models/search_model.dart';
+import '../models/message_model.dart';
 
-class ChatSummary {
-  final String receiverId;
-  final String receiverUsername;
-  final String receiverProfilePic;
-  final String? lastMessage;
-
-  ChatSummary({
-    required this.receiverId,
-    required this.receiverUsername,
-    required this.receiverProfilePic,
-    this.lastMessage,
-  });
-}
 
 class MessageListViewModel extends ChangeNotifier {
   final _auth = FirebaseAuth.instance;
@@ -27,60 +15,49 @@ class MessageListViewModel extends ChangeNotifier {
   List<SearchUser> searchedUsers = [];
   bool isSearching = false;
 
-  Future<void> loadChats() async {
+  void loadChats() {
     final currentUserId = _auth.currentUser?.uid;
     if (currentUserId == null) return;
 
-    // Get all unique users this user has messaged
-    final sent = await _firestore
-        .collection('messages')
-        .where('senderId', isEqualTo: currentUserId)
-        .get();
+    _firestore
+        .collection('users')
+        .doc(currentUserId)
+        .collection('chats')
+        .orderBy('timestamp', descending: true)
+        .snapshots()
+        .listen((snapshot) async {
+      final List<ChatSummary> chats = [];
 
-    final received = await _firestore
-        .collection('messages')
-        .where('receiverId', isEqualTo: currentUserId)
-        .get();
+      for (final doc in snapshot.docs) {
+        final data = doc.data();
+        final chatPartnerId = doc.id;
 
-    final userIds = <String>{};
+        final userDoc = await _firestore.collection('users').doc(chatPartnerId).get();
+        final userData = userDoc.data() ?? {};
 
-    for (var doc in sent.docs) {
-      userIds.add(doc['receiverId']);
-    }
-    for (var doc in received.docs) {
-      userIds.add(doc['senderId']);
-    }
+        final lastMsg = data['lastMessage'] ?? '';
+        final timestamp = (data['timestamp'] as Timestamp?)?.toDate();
+        final isMe = data['senderId'] == currentUserId;
+        final isUnread = data['isRead'] == false && !isMe;
 
-    final List<ChatSummary> chats = [];
+        chats.add(ChatSummary(
+          receiverId: chatPartnerId,
+          receiverUsername: userData['username'] ?? 'Unknown',
+          receiverProfilePic: userData['profile_picture'] ?? '',
+          lastMessage: lastMsg,
+          timestamp: timestamp,
+          isLastMessageFromMe: isMe,
+          isUnread: isUnread,
+        ));
+      }
 
-    for (final uid in userIds) {
-      final userDoc = await _firestore.collection('users').doc(uid).get();
-      final userData = userDoc.data() ?? {};
-
-      // Get the most recent message with this user
-      final messagesQuery = await _firestore
-          .collection('messages')
-          .where('senderId', whereIn: [currentUserId, uid])
-          .where('receiverId', whereIn: [currentUserId, uid])
-          .orderBy('timestamp', descending: true)
-          .limit(1)
-          .get();
-
-      final lastMessage = messagesQuery.docs.isNotEmpty
-          ? messagesQuery.docs.first['text'] as String
-          : '';
-
-      chats.add(ChatSummary(
-        receiverId: uid,
-        receiverUsername: userData['username'] ?? 'Unknown',
-        receiverProfilePic: userData['profile_picture'] ?? '',
-        lastMessage: lastMessage,
-      ));
-    }
-
-    recentChats = chats;
-    notifyListeners();
+      recentChats = chats;
+      notifyListeners();
+    });
   }
+
+
+
 
   void searchUsers(String query) async {
     isSearching = query.isNotEmpty;
@@ -112,4 +89,10 @@ class MessageListViewModel extends ChangeNotifier {
     searchedUsers = results;
     notifyListeners();
   }
+
+  int get unreadCount {
+    return recentChats.where((chat) => chat.isUnread).length;
+  }
 }
+
+

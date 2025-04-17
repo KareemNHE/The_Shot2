@@ -8,6 +8,16 @@ import '../views/chat_screen.dart';
 class MessagesScreen extends StatelessWidget {
   const MessagesScreen({Key? key}) : super(key: key);
 
+  String _timeAgo(DateTime time) {
+    final now = DateTime.now();
+    final diff = now.difference(time);
+
+    if (diff.inDays >= 1) return '${diff.inDays}d';
+    if (diff.inHours >= 1) return '${diff.inHours}h';
+    if (diff.inMinutes >= 1) return '${diff.inMinutes}m';
+    return 'just now';
+  }
+
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
@@ -66,11 +76,44 @@ class MessagesScreen extends StatelessWidget {
                       itemBuilder: (context, index) {
                         final chat = viewModel.recentChats[index];
                         return ListTile(
-                          leading: CircleAvatar(
-                            backgroundImage: NetworkImage(chat.receiverProfilePic),
+                          leading: Stack(
+                            children: [
+                              CircleAvatar(
+                                backgroundImage: NetworkImage(chat.receiverProfilePic),
+                                radius: 24,
+                              ),
+                              if (chat.isUnread)
+                                Positioned(
+                                  right: 0,
+                                  top: 0,
+                                  child: Container(
+                                    width: 10,
+                                    height: 10,
+                                    decoration: BoxDecoration(
+                                      color: Colors.red,
+                                      shape: BoxShape.circle,
+                                    ),
+                                  ),
+                                ),
+                            ],
                           ),
-                          title: Text(chat.receiverUsername),
-                          subtitle: Text(chat.lastMessage ?? ''),
+                          title: Text(
+                            chat.receiverUsername,
+                            style: TextStyle(
+                              fontWeight: chat.isUnread ? FontWeight.bold : FontWeight.normal,
+                            ),
+                          ),
+                          subtitle: Text(
+                            chat.lastMessage == null || chat.lastMessage!.isEmpty
+                                ? 'New message'
+                                : chat.isLastMessageFromMe
+                                ? 'Sent ${_timeAgo(chat.timestamp!)}'
+                                : 'Received ${_timeAgo(chat.timestamp!)}',
+                            style: TextStyle(
+                              fontWeight: chat.isUnread ? FontWeight.bold : FontWeight.normal,
+                            ),
+                          ),
+
                           onTap: () {
                             Navigator.push(
                               context,

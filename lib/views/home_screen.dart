@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:the_shot2/viewmodels/message_list_viewmodel.dart';
 import '../viewmodels/home_viewmodel.dart';
 import 'message_screen.dart';
 import 'widgets/post_card.dart';
@@ -20,17 +21,52 @@ class HomeScreen extends StatelessWidget {
             icon: const Icon(Icons.notifications),
             onPressed: () {},
           ),
-          IconButton(
-            icon: const Icon(Icons.messenger_rounded),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const MessagesScreen()),
+          Consumer<MessageListViewModel>(
+            builder: (context, msgViewModel, _) {
+              final unread = msgViewModel.unreadCount;
+
+              return Stack(
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.messenger_rounded),
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const MessagesScreen()),
+                      );
+                    },
+                  ),
+                  if (unread > 0)
+                    Positioned(
+                      right: 8,
+                      top: 8,
+                      child: Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: const BoxDecoration(
+                          color: Colors.red,
+                          shape: BoxShape.circle,
+                        ),
+                        constraints: const BoxConstraints(
+                          minWidth: 18,
+                          minHeight: 18,
+                        ),
+                        child: Text(
+                          unread.toString(),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    ),
+                ],
               );
             },
           ),
-
         ],
+
       ),
       body: Consumer<HomeViewModel>(
         builder: (context, homeViewModel, child) {

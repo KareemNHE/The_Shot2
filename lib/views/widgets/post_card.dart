@@ -6,6 +6,7 @@ import '../../models/post_models.dart';
 import '../../viewmodels/post_interaction_viewmodel.dart';
 import '../comment_section_screen.dart';
 import '../post_detail_screen.dart';
+import '../post_share_screen.dart';
 import '../profile_screen.dart';
 import '../user_profile_screen.dart';
 
@@ -139,8 +140,27 @@ class PostCard extends StatelessWidget {
                     const Spacer(),
                     IconButton(
                       icon: const Icon(Icons.share),
-                      onPressed: () {
-                        // Open share modal
+                      onPressed: () async {
+                        await showModalBottomSheet(
+                          context: context,
+                          isScrollControlled: true,
+                          shape: const RoundedRectangleBorder(
+                            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+                          ),
+                          builder: (context) => DraggableScrollableSheet(
+                            initialChildSize: 0.6,
+                            minChildSize: 0.4,
+                            maxChildSize: 0.95,
+                            expand: false,
+                            builder: (context, scrollController) {
+                              return PostShareScreen(
+                                post: post,
+                                scrollController: scrollController,
+                              );
+                            },
+                          ),
+                        );
+                        await viewModel.init(); // Refresh comment count
                       },
                     ),
                   ],

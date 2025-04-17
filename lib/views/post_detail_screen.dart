@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:the_shot2/views/post_share_screen.dart';
 import 'package:the_shot2/views/user_profile_screen.dart';
 import '../models/post_models.dart';
 import '../viewmodels/post_interaction_viewmodel.dart';
@@ -82,29 +83,29 @@ class PostDetailScreen extends StatelessWidget {
                     const Spacer(),
                     IconButton(
                       icon: const Icon(Icons.share),
-                        onPressed: () async {
-                          await showModalBottomSheet(
-                            context: context,
-                            isScrollControlled: true,
-                            shape: const RoundedRectangleBorder(
-                              borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-                            ),
-                            builder: (context) => DraggableScrollableSheet(
-                              initialChildSize: 0.6,
-                              minChildSize: 0.4,
-                              maxChildSize: 0.95,
-                              expand: false,
-                              builder: (context, scrollController) {
-                                return CommentSectionSheet(
-                                  postId: post.id,
-                                  scrollController: scrollController,
-                                );
-                              },
-                            ),
-                          );
+                      onPressed: () async {
+                        await showModalBottomSheet(
+                          context: context,
+                          isScrollControlled: true,
+                          shape: const RoundedRectangleBorder(
+                            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+                          ),
+                          builder: (context) => DraggableScrollableSheet(
+                            initialChildSize: 0.6,
+                            minChildSize: 0.4,
+                            maxChildSize: 0.95,
+                            expand: false,
+                            builder: (context, scrollController) {
+                              return PostShareScreen(
+                                post: post,
+                                scrollController: scrollController,
+                              );
+                            },
+                          ),
+                        );
+                        await viewModel.init(); // Refresh comment count
+                      },
 
-                          await viewModel.init(); // Refresh comment count
-                        }
 
                     ),
                   ],
