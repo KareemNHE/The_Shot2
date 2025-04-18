@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:the_shot2/views/post_detail_screen.dart';
 import '../models/message_model.dart';
-import '../models/post_models.dart';
+import '../models/post_model.dart';
 import '../viewmodels/chat_viewmodel.dart';
 import 'package:the_shot2/views/widgets/shared_post_preview.dart';
 

@@ -8,7 +8,7 @@ import 'package:the_shot2/views/login_screen.dart';
 import 'package:the_shot2/viewmodels/profile_viewmodel.dart';
 import 'package:the_shot2/views/post_detail_screen.dart';
 import 'package:the_shot2/views/user_list_screen.dart';
-import '../models/post_models.dart';
+import '../models/post_model.dart';
 
 
 class ProfileScreen extends StatefulWidget {

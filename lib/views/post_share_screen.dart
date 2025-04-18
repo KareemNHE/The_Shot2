@@ -2,7 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../models/post_models.dart';
+import '../models/post_model.dart';
 import '../viewmodels/post_share_viewmodel.dart';
 
 class PostShareScreen extends StatelessWidget {

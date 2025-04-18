@@ -2,7 +2,7 @@
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import '../models/post_models.dart';
+import '../models/post_model.dart';
 
 class PostViewModel extends ChangeNotifier {
   List<PostModel> _userPosts = [];

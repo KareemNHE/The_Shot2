@@ -2,7 +2,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../models/post_models.dart';
+import '../../models/post_model.dart';
 import '../../viewmodels/post_interaction_viewmodel.dart';
 import '../comment_section_screen.dart';
 import '../post_detail_screen.dart';
@@ -18,8 +18,8 @@ class PostCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider<PostInteractionViewModel>(
-      create: (_) => PostInteractionViewModel(postId: post.id)..init(),
-      child: Consumer<PostInteractionViewModel>(
+      create: (_) => PostInteractionViewModel(postId: post.id, postOwnerId: post.userId),
+        child: Consumer<PostInteractionViewModel>(
         builder: (context, viewModel, child) {
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -125,9 +125,11 @@ class PostCard extends StatelessWidget {
                             builder: (context, scrollController) {
                               return CommentSectionSheet(
                                 postId: post.id,
+                                postOwnerId: post.userId,
                                 scrollController: scrollController,
                               );
                             },
+
                           ),
                         );
 

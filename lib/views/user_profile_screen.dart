@@ -7,7 +7,7 @@ import 'package:the_shot2/views/post_detail_screen.dart';
 import 'package:the_shot2/views/user_list_screen.dart';
 import '../viewmodels/user_profile_viewmodel.dart';
 import '../models/search_model.dart';
-import '../models/post_models.dart';
+import '../models/post_model.dart';
 
 class UserProfileScreen extends StatelessWidget {
   final String userId;

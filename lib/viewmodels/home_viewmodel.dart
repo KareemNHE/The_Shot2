@@ -3,7 +3,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import '../models/post_models.dart';
+import '../models/post_model.dart';
 
 class HomeViewModel extends ChangeNotifier {
   List<PostModel> _posts = [];

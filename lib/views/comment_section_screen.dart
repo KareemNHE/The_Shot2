@@ -1,4 +1,4 @@
-// views/comment_section.dart
+// views/comment_section_screen.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/comment_model.dart';
@@ -7,13 +7,15 @@ import '../viewmodels/comment_viewmodel.dart';
 
 class CommentSection extends StatelessWidget {
   final String postId;
+  final String postOwnerId;
 
-  const CommentSection({Key? key, required this.postId}) : super(key: key);
+  const CommentSection({Key? key, required this.postId, required this.postOwnerId}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
-      create: (_) => CommentViewModel(postId: postId),
+      create: (_) => CommentViewModel(postId: postId, postOwnerId: postOwnerId),
+
       child: Scaffold(
         appBar: AppBar(title: const Text('Comments')),
         body: Column(
@@ -150,14 +152,20 @@ class _CommentInputFieldState extends State<_CommentInputField> {
 
 class CommentSectionSheet extends StatelessWidget {
   final String postId;
+  final String postOwnerId;
   final ScrollController scrollController;
 
-  const CommentSectionSheet({required this.postId, required this.scrollController, Key? key}) : super(key: key);
+  const CommentSectionSheet({
+    required this.postId,
+    required this.postOwnerId,
+    required this.scrollController,
+    Key? key,
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
-      create: (_) => CommentViewModel(postId: postId),
+      create: (_) => CommentViewModel(postId: postId, postOwnerId: ''),
       child: Consumer<CommentViewModel>(
         builder: (context, viewModel, _) {
           return Column(

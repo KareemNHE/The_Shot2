@@ -3,7 +3,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import '../../models/message_model.dart';
-import '../../models/post_models.dart';
+import '../../models/post_model.dart';
 import '../post_detail_screen.dart';
 
 class SharedPostPreview extends StatelessWidget {

@@ -4,7 +4,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import '../models/search_model.dart';
-import '../models/post_models.dart';
+import '../models/post_model.dart';
+import '../services/notification_service.dart';
 
 class UserProfileViewModel extends ChangeNotifier {
   bool _isLoading = true;
@@ -36,10 +37,25 @@ class UserProfileViewModel extends ChangeNotifier {
         .collection('following')
         .doc(otherUserId);
 
+    final followerRef = FirebaseFirestore.instance
+        .collection('users')
+        .doc(otherUserId)
+        .collection('followers')
+        .doc(currentUserId);
+
     if (_isFollowing) {
       await ref.delete();
+      await followerRef.delete();
     } else {
       await ref.set({});
+      await followerRef.set({});
+    }
+
+    if (!_isFollowing) {
+      await NotificationService.createNotification(
+        recipientId: otherUserId,
+        type: 'follow',
+      );
     }
 
     _isFollowing = !_isFollowing;

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../models/comment_model.dart';
+import '../services/notification_service.dart';
 
 class CommentViewModel extends ChangeNotifier {
   final String postId;
@@ -11,10 +12,15 @@ class CommentViewModel extends ChangeNotifier {
 
   List<CommentModel> get comments => _comments;
   bool get isLoading => _isLoading;
+  final String postOwnerId;
 
-  CommentViewModel({required this.postId}) {
+  CommentViewModel({
+    required this.postId,
+    required this.postOwnerId,
+  }) {
     fetchComments();
   }
+
 
   Future<void> fetchComments() async {
     _isLoading = true;
@@ -63,5 +69,11 @@ class CommentViewModel extends ChangeNotifier {
         .add(commentData);
 
     await fetchComments(); // Refresh after adding
+    await NotificationService.createNotification(
+      recipientId: postOwnerId,
+      type: 'comment',
+      relatedPostId: postId,
+      postOwnerId: postOwnerId,
+    );
   }
 }

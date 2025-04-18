@@ -13,12 +13,13 @@ import 'package:the_shot2/viewmodels/profile_viewmodel.dart';
 import 'package:the_shot2/viewmodels/search_viewmodel.dart';
 import 'package:the_shot2/views/bnb.dart';
 import 'package:the_shot2/views/home_screen.dart';
+import 'package:the_shot2/views/login_screen.dart';
 import 'package:the_shot2/views/search_screen.dart';
 import 'viewmodels/create_post_viewmodel.dart';
 import 'viewmodels/captured_photo_viewmodel.dart';
 import 'viewmodels/post_viewmodel.dart';
 import 'viewmodels/home_viewmodel.dart';
-import 'views/login_screen.dart';
+import 'viewmodels/notification_viewmodel.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -42,6 +43,7 @@ class TheShot extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
+        ChangeNotifierProvider(create: (_) => NotificationViewModel()),
         ChangeNotifierProvider(create: (context) => HomeViewModel()),
         ChangeNotifierProvider(create: (context) => PostViewModel()),
         ChangeNotifierProvider(create: (context) => CreatePostViewModel()), //Add back

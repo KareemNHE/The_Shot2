@@ -3,6 +3,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import '../services/notification_service.dart';
 
 class PostInteractionViewModel extends ChangeNotifier {
   final String postId;
@@ -10,7 +11,12 @@ class PostInteractionViewModel extends ChangeNotifier {
   int likeCount = 0;
   int commentCount = 0;
 
-  PostInteractionViewModel({required this.postId});
+  final String postOwnerId;
+
+  PostInteractionViewModel({
+    required this.postId,
+    required this.postOwnerId,
+  });
 
   Future<void> init() async {
     await _fetchLikes();
@@ -62,6 +68,11 @@ class PostInteractionViewModel extends ChangeNotifier {
         .doc(uid);
 
     if (isLiked) {
+      await NotificationService.createNotification(
+          recipientId: postOwnerId,
+          type: 'like',
+          relatedPostId: postId,
+      );
       await ref.delete();
       likeCount--;
     } else {

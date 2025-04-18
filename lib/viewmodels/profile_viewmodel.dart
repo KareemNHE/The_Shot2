@@ -2,7 +2,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:the_shot2/models/post_models.dart';
+import 'package:the_shot2/models/post_model.dart';
 
 class ProfileViewModel extends ChangeNotifier {
   String _username = '';
