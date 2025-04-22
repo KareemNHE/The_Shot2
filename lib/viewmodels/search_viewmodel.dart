@@ -85,7 +85,7 @@ class SearchViewModel extends ChangeNotifier {
 
     if (lowerQuery.isEmpty) {
       _filteredPosts = List.from(_allPosts);
-      _filteredUsers = [];
+      _filteredUsers = []; // ← this part already exists
     } else {
       _filteredPosts = _allPosts.where((post) {
         return post.caption.toLowerCase().contains(lowerQuery) ||
@@ -101,4 +101,5 @@ class SearchViewModel extends ChangeNotifier {
 
     notifyListeners();
   }
+
 }

@@ -31,9 +31,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final profileViewModel = Provider.of<ProfileViewModel>(context);
 
     return Scaffold(
-      backgroundColor: Colors.grey[300],
       appBar: AppBar(
-        title: const Text('Profile'),
         actions: [
           IconButton(
             icon: const Icon(Icons.menu),

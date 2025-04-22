@@ -52,17 +52,21 @@ class _LoginState extends State<Login> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[300],
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
         child: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               SizedBox(height: 50),
-              Icon(Icons.lock, size: 100),
+              Image.asset(
+                'assets/logo.png',
+                height: 100,
+                width: 100,
+              ),
               MyTextField(
                 controller: _emailController,
-                hintText: 'Username or Email',
+                hintText: 'Email',
                 obscuretext: false,
               ),
               SizedBox(height: 10),
@@ -93,7 +97,6 @@ class _LoginState extends State<Login> {
                   ],
                 ),
               ),
-
               SizedBox(height: 25.0),
               MyButton(
                 onTap: () => _logIn(),

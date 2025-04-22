@@ -15,8 +15,10 @@ class HomeScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         titleTextStyle: const TextStyle(color: Colors.black),
-        title: const Text("The Shot"),
-        backgroundColor: Colors.grey[100],
+        title: Image.asset(
+          'assets/text.png',
+          height: 30,
+        ),
         elevation: 0.0,
         actions: <Widget>[
           Consumer<NotificationViewModel>(
@@ -63,7 +65,6 @@ class HomeScreen extends StatelessWidget {
               );
             },
           ),
-
           Consumer<MessageListViewModel>(
             builder: (context, msgViewModel, _) {
               final unread = msgViewModel.unreadCount;

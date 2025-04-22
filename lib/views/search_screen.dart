@@ -28,17 +28,15 @@ class _SearchScreenState extends State<SearchScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[300],
       appBar: AppBar(
-        title: const Text('Search'),
         bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(50.0),
+          preferredSize: const Size.fromHeight(35.0),
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8),
             child: TextField(
               controller: _searchController,
               decoration: const InputDecoration(
-                hintText: 'Search users, hashtags, categories...',
+                hintText: 'Search',
                 prefixIcon: Icon(Icons.search),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.all(Radius.circular(8.0)),
@@ -62,13 +60,14 @@ class _SearchScreenState extends State<SearchScreen> {
 
           final users = viewModel.filteredUsers;
           final posts = viewModel.allPosts;
+          final query = _searchController.text.trim();
 
           return SingleChildScrollView(
             child: Column(
               children: [
-                if (users.isNotEmpty)
+                if (query.isNotEmpty && users.isNotEmpty)
                   ListView.builder(
-                    shrinkWrap: true,
+                  shrinkWrap: true,
                     physics: const NeverScrollableScrollPhysics(),
                     itemCount: users.length,
                     itemBuilder: (context, index) {

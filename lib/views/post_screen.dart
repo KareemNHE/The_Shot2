@@ -98,7 +98,6 @@ class _PostScreenState extends State<PostScreen> {
       final permission = await Permission.photos.request();
 
       if (!permission.isGranted) {
-        print('Photos permission denied');
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Permission denied. Cannot access gallery.')),
         );
@@ -111,7 +110,12 @@ class _PostScreenState extends State<PostScreen> {
       );
 
       if (result != null && result.files.isNotEmpty) {
-        print("Picked ${result.files.length} files");
+        setState(() {
+          _selectedFiles = result.paths
+              .whereType<String>()
+              .map((path) => File(path))
+              .toList();
+        });
       } else {
         print('No files selected');
       }
@@ -120,30 +124,40 @@ class _PostScreenState extends State<PostScreen> {
     }
   }
 
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('New Post +'),
+        title: const Text('New Post'),
       ),
-      body: _loading
-          ? const Center(child: CircularProgressIndicator())
-          : _albums.isEmpty
-              ? const Center(child: Text('No albums found'))
-              : GridView.builder(
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 3,
-                  ),
-                  itemCount: _albums.length,
-                  itemBuilder: (context, index) {
-                    final album = _albums[index];
-                    return GestureDetector(
-                      onTap: () async {
-                        final mediaPage = await album.listMedia();
-                        if (mediaPage.items.isNotEmpty) {
-                          final firstMedium = mediaPage.items.first;
-                          final file = await firstMedium.getFile();
-
+      body: RefreshIndicator(
+        onRefresh: _fetchAlbums,
+        child: _loading
+            ? const Center(child: CircularProgressIndicator())
+            : (_albums.isEmpty && _selectedFiles.isEmpty)
+            ? const Center(child: Text('No media found'))
+            : SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          child: Column(
+            children: [
+              if (_selectedFiles.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: GridView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: _selectedFiles.length,
+                    gridDelegate:
+                    const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 3,
+                      crossAxisSpacing: 4,
+                      mainAxisSpacing: 4,
+                    ),
+                    itemBuilder: (context, index) {
+                      final file = _selectedFiles[index];
+                      return GestureDetector(
+                        onTap: () async {
                           final result = await Navigator.push(
                             context,
                             MaterialPageRoute(
@@ -154,25 +168,74 @@ class _PostScreenState extends State<PostScreen> {
 
                           if (result == true) {
                             await Provider.of<ProfileViewModel>(context,
-                                    listen: false)
+                                listen: false)
                                 .fetchUserProfile();
-                            setState(() {}); // Refresh the profile UI
-                            Navigator.pop(
-                                context); // Pop back to home after post
+                            setState(() {});
+                            Navigator.pop(context);
                           }
-                        }
-                      },
-                      child: FadeInImage(
-                        fit: BoxFit.cover,
-                        placeholder: MemoryImage(kTransparentImage),
-                        image: AlbumThumbnailProvider(
-                          album: album,
-                          highQuality: true,
+                        },
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: Image.file(
+                            file,
+                            fit: BoxFit.cover,
+                          ),
                         ),
-                      ),
-                    );
-                  },
+                      );
+                    },
+                  ),
                 ),
+              GridView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                gridDelegate:
+                const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 3,
+                  crossAxisSpacing: 4,
+                  mainAxisSpacing: 4,
+                ),
+                itemCount: _albums.length,
+                itemBuilder: (context, index) {
+                  final album = _albums[index];
+                  return GestureDetector(
+                    onTap: () async {
+                      final mediaPage = await album.listMedia();
+                      if (mediaPage.items.isNotEmpty) {
+                        final firstMedium = mediaPage.items.first;
+                        final file = await firstMedium.getFile();
+
+                        final result = await Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) =>
+                                CreatePostScreen(imageUrl: file.path),
+                          ),
+                        );
+
+                        if (result == true) {
+                          await Provider.of<ProfileViewModel>(context,
+                              listen: false)
+                              .fetchUserProfile();
+                          setState(() {});
+                          Navigator.pop(context);
+                        }
+                      }
+                    },
+                    child: FadeInImage(
+                      fit: BoxFit.cover,
+                      placeholder: MemoryImage(kTransparentImage),
+                      image: AlbumThumbnailProvider(
+                        album: album,
+                        highQuality: true,
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
       floatingActionButton: Column(
         mainAxisAlignment: MainAxisAlignment.end,
         children: [

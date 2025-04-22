@@ -1,20 +1,18 @@
 
 //views/bnb.dart
 
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:the_shot2/services/api_service.dart';
 import 'package:the_shot2/views/home_screen.dart';
-import 'package:the_shot2/viewmodels/home_viewmodel.dart';
 import 'package:the_shot2/views/profile_screen.dart';
-import 'package:the_shot2/viewmodels/profile_viewmodel.dart';
 import 'package:the_shot2/views/search_screen.dart';
-import 'package:the_shot2/viewmodels/search_viewmodel.dart';
 import 'package:the_shot2/views/post_screen.dart';
-import 'package:the_shot2/viewmodels/post_viewmodel.dart';
 import 'package:the_shot2/views/market_screen.dart';
 import 'package:the_shot2/viewmodels/market_viewmodel.dart';
-import 'package:the_shot2/views/user_profile_screen.dart';
+
+import '../components/theme.dart';
+import '../viewmodels/profile_viewmodel.dart';
 
 
 class BottomNavBar extends StatefulWidget {
@@ -53,37 +51,70 @@ class _BottomNavBarState extends State<BottomNavBar> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: IndexedStack(
-        index: _currentIndex,
-        children: List.generate(_screens.length, (index) {
-          return Navigator(
-            key: _navigatorKeys[index],
-            onGenerateRoute: (settings) {
-              return MaterialPageRoute(
-                builder: (_) => _screens[index],
+    return Consumer<ProfileViewModel>(
+      builder: (context, profileViewModel, _) {
+        final profilePicUrl = profileViewModel.profilePictureUrl;
+
+        return Scaffold(
+          backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+          body: IndexedStack(
+            index: _currentIndex,
+            children: List.generate(_screens.length, (index) {
+              return Navigator(
+                key: _navigatorKeys[index],
+                onGenerateRoute: (settings) {
+                  return MaterialPageRoute(
+                    builder: (_) => _screens[index],
+                  );
+                },
               );
-            },
-          );
-        }),
-      ),
-      bottomNavigationBar: BottomNavigationBar(
-        type: BottomNavigationBarType.fixed,
-        selectedItemColor: const Color(0xFFCB7CCB),
-        backgroundColor: Colors.grey[100],
-        unselectedItemColor: Colors.grey[600],
-        currentIndex: _currentIndex,
-        onTap: _onTap,
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
-          BottomNavigationBarItem(icon: Icon(Icons.search), label: 'Search'),
-          BottomNavigationBarItem(icon: Icon(Icons.add_a_photo), label: 'Post'),
-          BottomNavigationBarItem(icon: Icon(Icons.shopping_cart), label: 'Market'),
-          BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
-        ],
-      ),
+            }),
+          ),
+          bottomNavigationBar: BottomNavigationBar(
+            currentIndex: _currentIndex,
+            onTap: _onTap,
+            type: BottomNavigationBarType.shifting,
+            selectedItemColor: kPrimaryAccent,
+            unselectedItemColor: Colors.grey,
+            elevation: 8,
+            items: [
+              const BottomNavigationBarItem(
+                icon: Icon(Icons.home),
+                label: 'Home',
+                backgroundColor: Colors.white,
+              ),
+              const BottomNavigationBarItem(
+                icon: Icon(Icons.search),
+                label: 'Search',
+                backgroundColor: Colors.white,
+              ),
+              const BottomNavigationBarItem(
+                icon: Icon(Icons.add_a_photo),
+                label: 'Post',
+                backgroundColor: Colors.white,
+              ),
+              const BottomNavigationBarItem(
+                icon: Icon(Icons.shopping_cart),
+                label: 'Market',
+                backgroundColor: Colors.white,
+              ),
+              BottomNavigationBarItem(
+                icon: CircleAvatar(
+                  radius: 12,
+                  backgroundImage: profilePicUrl.startsWith('http')
+                      ? NetworkImage(profilePicUrl)
+                      : const AssetImage('assets/default_profile.png') as ImageProvider,
+                ),
+                label: 'Profile',
+                backgroundColor: Colors.white,
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
+
 }
 
 

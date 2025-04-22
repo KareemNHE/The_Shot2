@@ -17,8 +17,6 @@ class _MarketScreenState extends State<MarketScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[300],
-
       appBar: AppBar(
         title: Text('Market'),
       ),

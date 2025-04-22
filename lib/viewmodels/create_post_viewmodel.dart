@@ -93,14 +93,20 @@ class CreatePostViewModel extends ChangeNotifier {
           .collection('posts')
           .doc();
 
+      final userDoc = await FirebaseFirestore.instance.collection('users').doc(userId).get();
+      final userData = userDoc.data() ?? {};
+
       final newPost = {
         'imageUrl': finalImageUrl,
         'caption': trimmedCaption,
         'timestamp': FieldValue.serverTimestamp(),
         'userId': userId,
+        'username': userData['username'] ?? '',
+        'userProfilePic': userData['profile_picture'] ?? '',
         'hashtags': hashtags,
         'category': category,
       };
+
 
       await postRef.set(newPost);
       homeViewModel.fetchPosts();

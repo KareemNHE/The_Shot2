@@ -46,8 +46,33 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
 
       final data = doc.data();
       if (data != null) {
+        PostModel post = PostModel.fromFirestore(data, doc.id);
+
+        // Fetch username/profilePic if missing
+        if (post.username == 'Unknown' || post.userProfilePic.isEmpty) {
+          final userDoc = await FirebaseFirestore.instance
+              .collection('users')
+              .doc(post.userId)
+              .get();
+
+          if (userDoc.exists) {
+            final userData = userDoc.data()!;
+            post = PostModel(
+              id: post.id,
+              userId: post.userId,
+              username: userData['username'] ?? 'Unknown',
+              userProfilePic: userData['profile_picture'] ?? '',
+              imageUrl: post.imageUrl,
+              caption: post.caption,
+              timestamp: post.timestamp,
+              hashtags: post.hashtags,
+              category: post.category,
+            );
+          }
+        }
+
         setState(() {
-          _post = PostModel.fromFirestore(data, doc.id);
+          _post = post;
           _isLoading = false;
         });
       } else {
@@ -57,6 +82,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
       _showPostNotFound();
     }
   }
+
 
 
   void _showPostNotFound() {
