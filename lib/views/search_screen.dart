@@ -3,10 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:the_shot2/views/post_detail_screen.dart';
 import 'package:the_shot2/views/user_profile_screen.dart';
-import 'package:the_shot2/viewmodels/user_profile_viewmodel.dart';
+import 'package:the_shot2/views/widgets/post_card.dart';
+import 'package:the_shot2/views/widgets/video_post_card.dart';
 import '../viewmodels/home_viewmodel.dart';
 import '../viewmodels/search_viewmodel.dart';
-import 'bnb.dart';
 
 class SearchScreen extends StatefulWidget {
   const SearchScreen({Key? key}) : super(key: key);
@@ -21,8 +21,14 @@ class _SearchScreenState extends State<SearchScreen> {
   @override
   void initState() {
     super.initState();
-    Future.microtask(() =>
-        Provider.of<SearchViewModel>(context, listen: false).fetchAllUserPosts());
+    Future.microtask(() => Provider.of<SearchViewModel>(context, listen: false)
+        .fetchAllUserPosts());
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 
   @override
@@ -45,94 +51,135 @@ class _SearchScreenState extends State<SearchScreen> {
                 fillColor: Colors.white,
               ),
               onChanged: (query) {
-                Provider.of<SearchViewModel>(context, listen: false)
-                    .search(query);
+                Provider.of<SearchViewModel>(context, listen: false).search(query);
               },
             ),
           ),
         ),
       ),
-      body: Consumer<SearchViewModel>(
-        builder: (context, viewModel, child) {
-          if (viewModel.isLoading) {
-            return const Center(child: CircularProgressIndicator());
-          }
+      body: RefreshIndicator(
+        onRefresh: () async {
+          await Provider.of<SearchViewModel>(context, listen: false)
+              .fetchAllUserPosts(isRefresh: true);
+        },
+        color: Theme.of(context).primaryColor,
+        backgroundColor: Colors.white,
+        displacement: 40.0,
+        child: Consumer<SearchViewModel>(
+          builder: (context, viewModel, child) {
+            if (viewModel.isLoading && !viewModel.isRefreshing) {
+              return const Center(child: CircularProgressIndicator());
+            }
 
-          final users = viewModel.filteredUsers;
-          final posts = viewModel.allPosts;
-          final query = _searchController.text.trim();
-
-          return SingleChildScrollView(
-            child: Column(
-              children: [
-                if (query.isNotEmpty && users.isNotEmpty)
-                  ListView.builder(
-                  shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    itemCount: users.length,
-                    itemBuilder: (context, index) {
-                      final user = users[index];
-                      return ListTile(
-                        leading: CircleAvatar(
-                          backgroundImage: user.profile_picture.isNotEmpty
-                              ? (user.profile_picture.startsWith('http')
-                              ? NetworkImage(user.profile_picture)
-                              : AssetImage(user.profile_picture) as ImageProvider)
-                              : const AssetImage('assets/default_profile.png'),
-                        ),
-                        title: Text(user.username),
-                        subtitle: Text(user.first_name + user.last_name),
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => UserProfileScreen(userId: user.id),
-                            ),
-                          ).then((_) {
-                            Provider.of<HomeViewModel>(context, listen: false).fetchPosts();
-                          });
-                        },
-                      );
-                    },
+            if (viewModel.errorMessage != null) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(viewModel.errorMessage!),
+                    action: SnackBarAction(
+                      label: 'Retry',
+                      onPressed: () {
+                        viewModel.clearError();
+                        viewModel.fetchAllUserPosts(isRefresh: true);
+                      },
+                    ),
                   ),
-                const SizedBox(height: 10),
-                GridView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  padding: const EdgeInsets.all(10.0),
-                  itemCount: posts.length,
+                );
+              });
+            }
+
+            final users = viewModel.filteredUsers;
+            final posts = viewModel.allPosts;
+            final query = _searchController.text.trim();
+
+            return CustomScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              slivers: [
+                if (query.isNotEmpty && users.isNotEmpty)
+                  SliverList(
+                    delegate: SliverChildBuilderDelegate(
+                          (context, index) {
+                        final user = users[index];
+                        return ListTile(
+                          leading: CircleAvatar(
+                            backgroundImage: user.profile_picture.isNotEmpty
+                                ? (user.profile_picture.startsWith('http')
+                                ? NetworkImage(user.profile_picture)
+                                : AssetImage(user.profile_picture)
+                            as ImageProvider)
+                                : const AssetImage('assets/default_profile.png'),
+                          ),
+                          title: Text(user.username),
+                          subtitle: Text('${user.first_name} ${user.last_name}'),
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) =>
+                                    UserProfileScreen(userId: user.id),
+                              ),
+                            ).then((_) {
+                              Provider.of<HomeViewModel>(context, listen: false)
+                                  .fetchPosts();
+                            });
+                          },
+                        );
+                      },
+                      childCount: users.length,
+                    ),
+                  ),
+                if (query.isNotEmpty && users.isNotEmpty)
+                  const SliverToBoxAdapter(child: SizedBox(height: 10)),
+                SliverGrid(
                   gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: 3,
                     crossAxisSpacing: 10,
                     mainAxisSpacing: 10,
                     childAspectRatio: 1,
                   ),
-                  itemBuilder: (context, index) {
-                    final post = posts[index];
-                    return ClipRRect(
-                      borderRadius: BorderRadius.circular(8),
-                      child: GestureDetector(
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(builder: (_) => PostDetailScreen(post: post)),
-                          );
-                        },
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(8),
-                          child: Image.network(
+                  delegate: SliverChildBuilderDelegate(
+                        (context, index) {
+                      final post = posts[index];
+                      return ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: GestureDetector(
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => post.type == 'video'
+                                    ? VideoPostDetailScreen(post: post)
+                                    : PostDetailScreen(post: post),
+                              ),
+                            );
+                          },
+                          child: post.type == 'video'
+                              ? VideoPostCard(
+                              post: post, isThumbnailOnly: true)
+                              : Image.network(
                             post.imageUrl,
                             fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) =>
+                            const Icon(Icons.broken_image),
                           ),
                         ),
-                      )
-                    );
-                  },
+                      );
+                    },
+                    childCount: posts.length,
+                  ),
+                ),
+                SliverToBoxAdapter(
+                  child: posts.isEmpty && users.isEmpty && !viewModel.isLoading
+                      ? const Padding(
+                    padding: EdgeInsets.all(16.0),
+                    child: Center(child: Text('No results found')),
+                  )
+                      : const SizedBox(height: 10),
                 ),
               ],
-            ),
-          );
-        },
+            );
+          },
+        ),
       ),
     );
   }

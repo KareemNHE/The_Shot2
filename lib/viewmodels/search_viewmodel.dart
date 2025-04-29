@@ -5,13 +5,14 @@ import 'package:the_shot2/models/search_model.dart';
 import 'package:the_shot2/services/api_service.dart';
 import 'package:the_shot2/models/post_model.dart';
 
-
 class SearchViewModel extends ChangeNotifier {
   final ApiService apiService;
 
   SearchViewModel({required this.apiService});
 
   bool _isLoading = true;
+  bool _isRefreshing = false;
+  String? _errorMessage;
 
   List<PostModel> _allPosts = [];
   List<SearchUser> _allUsers = [];
@@ -20,11 +21,18 @@ class SearchViewModel extends ChangeNotifier {
   List<SearchUser> _filteredUsers = [];
 
   bool get isLoading => _isLoading;
+  bool get isRefreshing => _isRefreshing;
+  String? get errorMessage => _errorMessage;
   List<PostModel> get allPosts => _filteredPosts;
   List<SearchUser> get filteredUsers => _filteredUsers;
 
-  Future<void> fetchAllUserPosts() async {
-    _isLoading = true;
+  Future<void> fetchAllUserPosts({bool isRefresh = false}) async {
+    if (isRefresh) {
+      _isRefreshing = true;
+    } else {
+      _isLoading = true;
+    }
+    _errorMessage = null;
     notifyListeners();
 
     try {
@@ -50,8 +58,7 @@ class SearchViewModel extends ChangeNotifier {
       }).toList();
 
       final Map<String, dynamic> userMap = {
-        for (var user in usersSnapshot.docs)
-          user.id: user.data(),
+        for (var user in usersSnapshot.docs) user.id: user.data(),
       };
 
       _allPosts = tempPosts.map((post) {
@@ -62,30 +69,37 @@ class SearchViewModel extends ChangeNotifier {
           username: userData?['username'] ?? 'Unknown',
           userProfilePic: userData?['profile_picture'] ?? '',
           imageUrl: post.imageUrl,
+          videoUrl: post.videoUrl,
+          thumbnailUrl: post.thumbnailUrl,
           caption: post.caption,
           timestamp: post.timestamp,
           hashtags: post.hashtags,
           category: post.category,
+          type: post.type,
         );
       }).toList();
 
       _filteredPosts = List.from(_allPosts);
       _filteredUsers = List.from(_allUsers);
     } catch (e) {
+      _errorMessage = 'Failed to refresh posts: $e';
       print('Error fetching search posts: $e');
     }
 
-    _isLoading = false;
+    if (isRefresh) {
+      _isRefreshing = false;
+    } else {
+      _isLoading = false;
+    }
     notifyListeners();
   }
-
 
   void search(String query) {
     final lowerQuery = query.toLowerCase();
 
     if (lowerQuery.isEmpty) {
       _filteredPosts = List.from(_allPosts);
-      _filteredUsers = []; // ← this part already exists
+      _filteredUsers = [];
     } else {
       _filteredPosts = _allPosts.where((post) {
         return post.caption.toLowerCase().contains(lowerQuery) ||
@@ -102,4 +116,8 @@ class SearchViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  void clearError() {
+    _errorMessage = null;
+    notifyListeners();
+  }
 }

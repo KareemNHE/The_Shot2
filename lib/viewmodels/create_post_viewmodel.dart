@@ -1,17 +1,18 @@
-// viewmodels/create_post_viewmodel.dart
-
+//viewmodels/create_post_viewmodel.dart
 import 'dart:io';
-
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:mime/mime.dart';
+import '../services/video_service.dart';
 import 'home_viewmodel.dart';
 
 class CreatePostViewModel extends ChangeNotifier {
   final FlutterLocalNotificationsPlugin _flutterLocalNotificationsPlugin =
   FlutterLocalNotificationsPlugin();
+  final VideoService _videoService = VideoService();
 
   CreatePostViewModel() {
     initializeNotifications();
@@ -44,12 +45,98 @@ class CreatePostViewModel extends ChangeNotifier {
     );
   }
 
-  Future<void> createPost({
-    required String imageUrl,
+  Future<void> uploadImagePost({
+    required File imageFile,
     required String caption,
     required String category,
     required BuildContext context,
     required HomeViewModel homeViewModel,
+  }) async {
+    final mimeType = lookupMimeType(imageFile.path);
+    if (mimeType != null && !mimeType.startsWith('image/')) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Selected file is not an image!')),
+      );
+      return;
+    }
+    await _uploadPost(
+      file: imageFile,
+      caption: caption,
+      category: category,
+      type: 'image',
+      context: context,
+      homeViewModel: homeViewModel,
+    );
+  }
+
+  Future<void> uploadVideoPost({
+    required File videoFile,
+    required String caption,
+    required String category,
+    required BuildContext context,
+    required HomeViewModel homeViewModel,
+  }) async {
+    final mimeType = lookupMimeType(videoFile.path);
+    final ext = videoFile.path.split('.').last.toLowerCase();
+    final validVideoExtensions = ['mp4', 'mov', 'mkv', 'mpeg', '3gp', '3gpp', 'avi'];
+
+    if ((mimeType == null || !mimeType.startsWith('video/')) && !validVideoExtensions.contains(ext)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Selected file is not a valid video!')),
+      );
+      return;
+    }
+
+    // Validate video duration and resolution
+    final videoSpecs = await _videoService.validateVideo(videoFile);
+    if (!videoSpecs['isValidDuration']) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Video exceeds 60-second limit!')),
+      );
+      return;
+    }
+
+    // Check resolution (allow 3840x2160 or 2160x3840)
+    final width = videoSpecs['width'] as int;
+    final height = videoSpecs['height'] as int;
+
+    if ((width > 3840 || height > 2160) && (width > 2160 || height > 3840)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Video resolution exceeds 4K (3840x2160 or 2160x3840) limit!')),
+      );
+      return;
+    }
+
+    // Compress video (skip for low-resolution videos)
+    File? compressedVideo;
+    if (width <= 854 && height <= 480) {
+      compressedVideo = videoFile; // Skip compression
+    } else {
+      compressedVideo = await _videoService.compressVideo(videoFile, context);
+    }
+    if (compressedVideo == null) {
+      return;
+    }
+
+    await _uploadPost(
+      file: compressedVideo,
+      caption: caption,
+      category: category,
+      type: 'video',
+      context: context,
+      homeViewModel: homeViewModel,
+      videoFile: compressedVideo, // Pass for thumbnail generation
+    );
+  }
+
+  Future<void> _uploadPost({
+    required File file,
+    required String caption,
+    required String category,
+    required String type,
+    required BuildContext context,
+    required HomeViewModel homeViewModel,
+    File? videoFile, // Optional for video thumbnail
   }) async {
     final trimmedCaption = caption.trim();
     if (trimmedCaption.isEmpty) {
@@ -59,33 +146,47 @@ class CreatePostViewModel extends ChangeNotifier {
       return;
     }
 
-    List<String> extractHashtags(String caption) {
-      final RegExp hashtagRegex = RegExp(r'\B#\w\w+');
-      return hashtagRegex.allMatches(caption).map((match) => match.group(0)!).toList();
-    }
-
     try {
       final userId = FirebaseAuth.instance.currentUser?.uid;
-      if (userId == null) {
-        print("Error: User is not logged in.");
-        return;
-      }
+      if (userId == null) return;
 
-      final hashtags = extractHashtags(trimmedCaption);
+      final hashtags = _extractHashtags(trimmedCaption);
 
-      String finalImageUrl = imageUrl;
-      if (!imageUrl.startsWith('https://')) {
-        final file = File(imageUrl);
-        if (!file.existsSync()) {
-          throw Exception('Image file does not exist');
+      final ext = file.path.split('.').last;
+      final filename = '${DateTime.now().millisecondsSinceEpoch}.$ext';
+      final storageRef = FirebaseStorage.instance.ref().child('posts/$filename');
+
+      // Retry logic for upload
+      const maxRetries = 3;
+      int attempt = 0;
+      String? fileUrl;
+
+      while (attempt < maxRetries) {
+        try {
+          final uploadTask = await storageRef.putFile(file);
+          fileUrl = await uploadTask.ref.getDownloadURL();
+          break;
+        } catch (e) {
+          attempt++;
+          if (attempt == maxRetries) {
+            throw Exception('Failed to upload file after $maxRetries attempts: $e');
+          }
+          await Future.delayed(Duration(milliseconds: 500 * attempt));
         }
-
-        final storageRef = FirebaseStorage.instance
-            .ref()
-            .child('posts/${DateTime.now().millisecondsSinceEpoch}.jpg');
-        final uploadTask = await storageRef.putFile(file);
-        finalImageUrl = await uploadTask.ref.getDownloadURL();
       }
+
+      if (fileUrl == null) {
+        throw Exception('Failed to obtain file URL');
+      }
+
+      // Generate and upload thumbnail for videos
+      String? thumbnailUrl;
+      if (type == 'video' && videoFile != null) {
+        thumbnailUrl = await _videoService.generateAndUploadThumbnail(videoFile, userId);
+      }
+
+      final userDoc = await FirebaseFirestore.instance.collection('users').doc(userId).get();
+      final userData = userDoc.data() ?? {};
 
       final postRef = FirebaseFirestore.instance
           .collection('users')
@@ -93,11 +194,10 @@ class CreatePostViewModel extends ChangeNotifier {
           .collection('posts')
           .doc();
 
-      final userDoc = await FirebaseFirestore.instance.collection('users').doc(userId).get();
-      final userData = userDoc.data() ?? {};
-
       final newPost = {
-        'imageUrl': finalImageUrl,
+        'imageUrl': type == 'image' ? fileUrl : '',
+        'videoUrl': type == 'video' ? fileUrl : '',
+        'thumbnailUrl': thumbnailUrl ?? '',
         'caption': trimmedCaption,
         'timestamp': FieldValue.serverTimestamp(),
         'userId': userId,
@@ -105,21 +205,27 @@ class CreatePostViewModel extends ChangeNotifier {
         'userProfilePic': userData['profile_picture'] ?? '',
         'hashtags': hashtags,
         'category': category,
+        'type': type,
       };
 
-
       await postRef.set(newPost);
-      homeViewModel.fetchPosts();
+      await homeViewModel.fetchPosts();
       await showNotification();
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Post created successfully!')),
       );
+      print('✅ Uploaded a $type post successfully!');
     } catch (e) {
-      print('Error creating post: $e');
+      print('Error uploading post: $e');
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to create post: $e')),
+        SnackBar(content: Text('Failed to upload post: $e')),
       );
     }
+  }
+
+  List<String> _extractHashtags(String caption) {
+    final RegExp hashtagRegex = RegExp(r'\B#\w\w+');
+    return hashtagRegex.allMatches(caption).map((match) => match.group(0)!).toList();
   }
 }

@@ -3,7 +3,6 @@ import 'components/theme.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_app_check/firebase_app_check.dart';
-import 'package:the_shot2/db/user_db.dart';
 import 'package:provider/provider.dart';
 import 'package:the_shot2/services/api_service.dart';
 import 'package:the_shot2/viewmodels/camera_viewmodel.dart';
@@ -20,18 +19,15 @@ import 'viewmodels/captured_photo_viewmodel.dart';
 import 'viewmodels/post_viewmodel.dart';
 import 'viewmodels/home_viewmodel.dart';
 import 'viewmodels/notification_viewmodel.dart';
+import 'package:firebase_app_check/firebase_app_check.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   await Firebase.initializeApp();
-  await FirebaseAppCheck.instance.activate();
-
-  // Initialize the database
-  await UserDatabase.instance.initDatabase();
-
-  // Insert sample users
-  await UserDatabase.instance.insertSampleUsers();
+  await FirebaseAppCheck.instance.activate(
+    androidProvider: AndroidProvider.playIntegrity,
+  );
 
   runApp(const TheShot());
 }

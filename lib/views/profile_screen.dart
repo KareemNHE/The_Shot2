@@ -8,8 +8,10 @@ import 'package:the_shot2/views/login_screen.dart';
 import 'package:the_shot2/viewmodels/profile_viewmodel.dart';
 import 'package:the_shot2/views/post_detail_screen.dart';
 import 'package:the_shot2/views/user_list_screen.dart';
-import '../models/post_model.dart';
+import 'package:the_shot2/views/widgets/video_post_card.dart';
+import 'package:the_shot2/views/widgets/post_card.dart';
 
+import '../models/post_model.dart'; // For VideoPostDetailScreen
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({Key? key}) : super(key: key);
@@ -50,7 +52,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
           child: Column(
             children: [
               const SizedBox(height: 40),
-              // Profile Picture
               CircleAvatar(
                 radius: 60,
                 backgroundImage: profileViewModel.profilePictureUrl.startsWith('http')
@@ -58,7 +59,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     : const AssetImage('assets/default_profile.png') as ImageProvider,
               ),
               const SizedBox(height: 10),
-              // Username
               Text(
                 profileViewModel.username,
                 style: const TextStyle(
@@ -67,23 +67,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
               ),
               const SizedBox(height: 10),
-              // Bio
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20.0),
                 child: Text(
                   profileViewModel.bio,
                   textAlign: TextAlign.center,
-                  style: const TextStyle(
-                      fontSize: 16,
-                      color: Colors.black
-                  ),
+                  style: const TextStyle(fontSize: 16, color: Colors.black),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
               const SizedBox(height: 20),
-              // Follower & Following Count
-              // Follower & Following Count
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -115,9 +109,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       ],
                     ),
                   ),
-
                   const SizedBox(width: 30),
-
                   GestureDetector(
                     onTap: () async {
                       final snapshot = await FirebaseFirestore.instance
@@ -148,9 +140,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ),
                 ],
               ),
-
               const SizedBox(height: 20),
-              // User Posts Grid
               _buildUserPostsGrid(profileViewModel.userPosts),
             ],
           ),
@@ -159,23 +149,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  // Stats Widget
-  Widget _buildStatColumn(String label, int count) {
-    return Column(
-      children: [
-        Text(
-          count.toString(),
-          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-        ),
-        Text(
-          label,
-          style: const TextStyle(fontSize: 14, color: Colors.grey),
-        ),
-      ],
-    );
-  }
-
-  // User Posts Grid
   Widget _buildUserPostsGrid(List<PostModel> posts) {
     return Padding(
       padding: const EdgeInsets.all(10.0),
@@ -195,14 +168,27 @@ class _ProfileScreenState extends State<ProfileScreen> {
             onTap: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (_) => PostDetailScreen(post: post)),
+                MaterialPageRoute(
+                  builder: (_) => post.type == 'video'
+                      ? VideoPostDetailScreen(post: post)
+                      : PostDetailScreen(post: post),
+                ),
               );
             },
             child: ClipRRect(
               borderRadius: BorderRadius.circular(8),
-              child: Image.network(
+              child: post.type == 'video' && post.videoUrl.isNotEmpty
+                  ? VideoPostCard(post: post, isThumbnailOnly: true)
+                  : post.imageUrl.isNotEmpty
+                  ? Image.network(
                 post.imageUrl,
                 fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) =>
+                const Icon(Icons.broken_image),
+              )
+                  : const SizedBox(
+                height: 200,
+                child: Center(child: Icon(Icons.broken_image)),
               ),
             ),
           );
@@ -211,8 +197,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-
-  // Side Menu Drawer
   void _openSideMenu(BuildContext context) {
     showModalBottomSheet(
       context: context,
@@ -228,11 +212,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 final result = await Navigator.of(context).push(
                   MaterialPageRoute(builder: (context) => const EditProfileScreen()),
                 );
-                // Refetch the profile after editing
                 if (result == true) {
                   await Provider.of<ProfileViewModel>(context, listen: false)
                       .fetchUserProfile();
-                  setState(() {}); // Force re-render
+                  setState(() {});
                 }
               }),
               _buildMenuItem(Icons.help, 'Help', () {}),
@@ -249,7 +232,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  // Menu Item Builder
   Widget _buildMenuItem(IconData icon, String title, VoidCallback onTap) {
     return ListTile(
       leading: Icon(icon, color: Colors.black),

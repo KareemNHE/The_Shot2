@@ -1,18 +1,17 @@
-//views/post_screen.dart
-
+// views/post_screen.dart
 import 'dart:io';
-import 'dart:typed_data';
 import 'package:flutter/material.dart';
-import 'package:photo_gallery/photo_gallery.dart';
 import 'package:provider/provider.dart';
 import 'package:the_shot2/views/camera_screen.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:transparent_image/transparent_image.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'package:the_shot2/views/create_post_screen.dart';
+import 'package:the_shot2/views/create_image_post_screen.dart';
 import 'package:file_picker/file_picker.dart';
-
-import '../viewmodels/profile_viewmodel.dart';
+import 'create_video_post_screen.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:photo_manager/photo_manager.dart';
+import 'dart:typed_data';
+import 'package:mime/mime.dart'; // Add mime package for MIME type detection
 
 class PostScreen extends StatefulWidget {
   const PostScreen({Key? key}) : super(key: key);
@@ -22,7 +21,7 @@ class PostScreen extends StatefulWidget {
 }
 
 class _PostScreenState extends State<PostScreen> {
-  List<Album> _albums = [];
+  List<AssetEntity> _albums = [];
   bool _loading = true;
 
   @override
@@ -45,86 +44,84 @@ class _PostScreenState extends State<PostScreen> {
   }
 
   Future<void> requestPermissions() async {
-    if (Platform.isAndroid) {
-      if (await Permission.photos.isGranted) {
-        print("Photos permission already granted");
-        return;
-      }
-
-      final status = await Permission.photos.request();
-
-      if (status.isGranted) {
-        print("Photos permission granted");
-      } else {
-        print("Photos permission denied");
-      }
-    } else if (Platform.isIOS) {
-      final status = await Permission.mediaLibrary.request();
-      if (status.isGranted) {
-        print("IOS media permission granted");
-      } else {
-        print("iOS media permission denied");
-      }
+    final PermissionState result = await PhotoManager.requestPermissionExtend();
+    if (result.isAuth) {
+      print("Media permission granted");
+    } else {
+      PhotoManager.openSetting();
+      print("Media permission denied");
     }
   }
 
   Future<void> _fetchAlbums() async {
     try {
-      print('Fetching albums...');
-      final albums = await PhotoGallery.listAlbums(
-        mediumType: MediumType.image,
-        newest: true,
-        hideIfEmpty: true,
+      final albums = await PhotoManager.getAssetPathList(
+        type: RequestType.all,
+        filterOption: FilterOptionGroup(
+          videoOption: const FilterOption(durationConstraint: DurationConstraint(min: Duration(seconds: 1))),
+          imageOption: const FilterOption(),
+          orders: [OrderOption(type: OrderOptionType.createDate, asc: false)],
+        ),
       );
-      print('Albums fetched: ${albums.length}');
-      setState(() {
-        _albums = albums;
-        _loading = false;
-      });
-    } catch (e) {
-      print('Error fetching albums: $e');
-      setState(() {
-        _loading = false;
-      });
-    }
-  }
-
-  PlatformFile? _imageFile;
-
-  List<File> _selectedFiles = [];
-
-  Future<void> _pickImages() async {
-    try {
-      final permission = await Permission.photos.request();
-
-      if (!permission.isGranted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Permission denied. Cannot access gallery.')),
-        );
+      if (albums.isEmpty) {
+        setState(() {
+          _albums = [];
+          _loading = false;
+        });
         return;
       }
 
-      final result = await FilePicker.platform.pickFiles(
-        allowMultiple: true,
-        type: FileType.image,
-      );
+      final mediaList = await albums[0].getAssetListPaged(page: 0, size: 60);
 
-      if (result != null && result.files.isNotEmpty) {
-        setState(() {
-          _selectedFiles = result.paths
-              .whereType<String>()
-              .map((path) => File(path))
-              .toList();
-        });
-      } else {
-        print('No files selected');
+      List<AssetEntity> allMedia = [];
+
+      for (final album in albums) {
+        final media = await album.getAssetListPaged(page: 0, size: 60);
+        allMedia.addAll(media);
       }
+
+      setState(() {
+        _albums = allMedia;
+        _loading = false;
+      });
     } catch (e) {
-      print('Error picking files: $e');
+      print("Gallery access error: $e");
+      setState(() => _loading = false);
     }
   }
 
+  Future<void> _pickMedia() async {
+    final picker = ImagePicker();
+    final pickedFile = await picker.pickMedia(
+      requestFullMetadata: true,
+    );
 
+    if (pickedFile != null) {
+      final file = File(pickedFile.path);
+      final mimeType = lookupMimeType(file.path);
+      final ext = file.path.split('.').last.toLowerCase();
+
+      // Check MIME type first, then fall back to extension
+      bool isVideo = (mimeType != null && mimeType.startsWith('video/')) ||
+          ['mp4', 'mov', '3gp', '3gpp', 'avi', 'mkv', 'mpeg'].contains(ext);
+
+      if (isVideo) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => CreateVideoPostScreen(videoFile: file),
+          ),
+        );
+      } else {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => CreateImagePostScreen(imagePath: file.path),
+          ),
+        );
+      }
+    }
+  }
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -135,99 +132,87 @@ class _PostScreenState extends State<PostScreen> {
         onRefresh: _fetchAlbums,
         child: _loading
             ? const Center(child: CircularProgressIndicator())
-            : (_albums.isEmpty && _selectedFiles.isEmpty)
+            : (_albums.isEmpty)
             ? const Center(child: Text('No media found'))
             : SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
           child: Column(
             children: [
-              if (_selectedFiles.isNotEmpty)
-                Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: GridView.builder(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    itemCount: _selectedFiles.length,
-                    gridDelegate:
-                    const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 3,
-                      crossAxisSpacing: 4,
-                      mainAxisSpacing: 4,
-                    ),
-                    itemBuilder: (context, index) {
-                      final file = _selectedFiles[index];
-                      return GestureDetector(
-                        onTap: () async {
-                          final result = await Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) =>
-                                  CreatePostScreen(imageUrl: file.path),
-                            ),
-                          );
-
-                          if (result == true) {
-                            await Provider.of<ProfileViewModel>(context,
-                                listen: false)
-                                .fetchUserProfile();
-                            setState(() {});
-                            Navigator.pop(context);
-                          }
-                        },
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(8),
-                          child: Image.file(
-                            file,
-                            fit: BoxFit.cover,
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                ),
               GridView.builder(
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
-                gridDelegate:
-                const SliverGridDelegateWithFixedCrossAxisCount(
+                itemCount: _albums.length,
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                   crossAxisCount: 3,
                   crossAxisSpacing: 4,
                   mainAxisSpacing: 4,
                 ),
-                itemCount: _albums.length,
                 itemBuilder: (context, index) {
-                  final album = _albums[index];
+                  final asset = _albums[index];
                   return GestureDetector(
                     onTap: () async {
-                      final mediaPage = await album.listMedia();
-                      if (mediaPage.items.isNotEmpty) {
-                        final firstMedium = mediaPage.items.first;
-                        final file = await firstMedium.getFile();
+                      final file = await asset.file;
+                      if (file != null) {
+                        // Use asset.type for reliable video detection
+                        bool isVideo = asset.type == AssetType.video;
 
-                        final result = await Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) =>
-                                CreatePostScreen(imageUrl: file.path),
-                          ),
-                        );
+                        // Fallback to MIME type or extension if needed
+                        if (!isVideo) {
+                          final mimeType = lookupMimeType(file.path);
+                          final extension = file.path.split('.').last.toLowerCase();
+                          isVideo = (mimeType != null && mimeType.startsWith('video/')) ||
+                              ['mp4', 'mov', 'mkv', 'mpeg', '3gp', '3gpp', 'avi'].contains(extension);
+                        }
 
-                        if (result == true) {
-                          await Provider.of<ProfileViewModel>(context,
-                              listen: false)
-                              .fetchUserProfile();
-                          setState(() {});
-                          Navigator.pop(context);
+                        print('${asset.title} | type: ${asset.type} | isVideo: $isVideo');
+
+                        if (isVideo) {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => CreateVideoPostScreen(videoFile: file),
+                            ),
+                          );
+                        } else {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => CreateImagePostScreen(imagePath: file.path),
+                            ),
+                          );
                         }
                       }
                     },
-                    child: FadeInImage(
-                      fit: BoxFit.cover,
-                      placeholder: MemoryImage(kTransparentImage),
-                      image: AlbumThumbnailProvider(
-                        album: album,
-                        highQuality: true,
-                      ),
+                    child: FutureBuilder<Uint8List?>(
+                      future: asset.thumbnailDataWithSize(const ThumbnailSize(200, 200)),
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState == ConnectionState.done &&
+                            snapshot.hasData &&
+                            snapshot.data != null &&
+                            snapshot.data!.isNotEmpty) {
+                          return Stack(
+                            children: [
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(8),
+                                child: Image.memory(
+                                  snapshot.data!,
+                                  fit: BoxFit.cover,
+                                  width: double.infinity,
+                                  height: double.infinity,
+                                ),
+                              ),
+                              if (asset.type == AssetType.video)
+                                const Positioned(
+                                  bottom: 8,
+                                  right: 8,
+                                  child: Icon(Icons.videocam, color: Colors.white),
+                                ),
+                            ],
+                          );
+                        } else {
+                          return const Center(child: Icon(Icons.broken_image));
+                        }
+                      },
                     ),
                   );
                 },
@@ -240,9 +225,8 @@ class _PostScreenState extends State<PostScreen> {
         mainAxisAlignment: MainAxisAlignment.end,
         children: [
           FloatingActionButton(
-            heroTag: 'pick_photo',
-            onPressed: _pickImages,
-            child: const Icon(Icons.photo_library),
+            onPressed: _pickMedia,
+            child: const Icon(Icons.perm_media),
           ),
           const SizedBox(height: 16),
           FloatingActionButton(

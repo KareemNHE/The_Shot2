@@ -5,10 +5,11 @@ import 'package:provider/provider.dart';
 import '../../models/post_model.dart';
 import '../../viewmodels/post_interaction_viewmodel.dart';
 import '../comment_section_screen.dart';
-import '../post_detail_screen.dart';
 import '../post_share_screen.dart';
 import '../profile_screen.dart';
 import '../user_profile_screen.dart';
+import 'custom_video_player.dart';
+import 'video_post_card.dart';
 
 class PostCard extends StatelessWidget {
   final PostModel post;
@@ -19,12 +20,11 @@ class PostCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return ChangeNotifierProvider<PostInteractionViewModel>(
       create: (_) => PostInteractionViewModel(postId: post.id, postOwnerId: post.userId),
-        child: Consumer<PostInteractionViewModel>(
+      child: Consumer<PostInteractionViewModel>(
         builder: (context, viewModel, child) {
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Username & profile pic above image
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 10.0),
                 child: Row(
@@ -32,15 +32,12 @@ class PostCard extends StatelessWidget {
                     GestureDetector(
                       onTap: () {
                         final currentUserId = FirebaseAuth.instance.currentUser?.uid;
-
                         if (post.userId == currentUserId) {
-                          // Navigate to self profile screen (same as bottom nav one)
                           Navigator.push(
                             context,
                             MaterialPageRoute(builder: (_) => const ProfileScreen()),
                           );
                         } else {
-                          // Navigate to other user’s profile
                           Navigator.push(
                             context,
                             MaterialPageRoute(builder: (_) => UserProfileScreen(userId: post.userId)),
@@ -57,15 +54,19 @@ class PostCard extends StatelessWidget {
                     GestureDetector(
                       onTap: () {
                         final currentUserId = FirebaseAuth.instance.currentUser?.uid;
-
+                        print('---');
+                        print('Post ID: ${post.id}');
+                        print('Type: ${post.type}');
+                        print('Image URL: ${post.imageUrl}');
+                        print('Video URL: ${post.videoUrl}');
+                        print('Thumbnail URL: ${post.thumbnailUrl}');
+                        print('---');
                         if (post.userId == currentUserId) {
-                          // Navigate to self profile screen (same as bottom nav one)
                           Navigator.push(
                             context,
                             MaterialPageRoute(builder: (_) => const ProfileScreen()),
                           );
                         } else {
-                          // Navigate to other user’s profile
                           Navigator.push(
                             context,
                             MaterialPageRoute(builder: (_) => UserProfileScreen(userId: post.userId)),
@@ -80,11 +81,36 @@ class PostCard extends StatelessWidget {
                   ],
                 ),
               ),
-
-              // Post image
-              Image.network(post.imageUrl, width: double.infinity, fit: BoxFit.cover),
-
-              // Caption
+              GestureDetector(
+                onTap: () {
+                  // Navigate to detail screen for videos
+                  if (post.type == 'video') {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => VideoPostDetailScreen(post: post),
+                      ),
+                    );
+                  }
+                },
+                child: post.type == 'video' && post.videoUrl.isNotEmpty
+                    ? VideoPostCard(post: post, isThumbnailOnly: true)
+                    : post.imageUrl.isNotEmpty
+                    ? Image.network(
+                  post.imageUrl,
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) {
+                    return const SizedBox(
+                      height: 200,
+                      child: Center(child: Icon(Icons.broken_image)),
+                    );
+                  },
+                )
+                    : const SizedBox(
+                  height: 200,
+                  child: Center(child: Icon(Icons.broken_image)),
+                ),
+              ),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
                 child: Text(
@@ -92,8 +118,6 @@ class PostCard extends StatelessWidget {
                   style: const TextStyle(fontSize: 16),
                 ),
               ),
-
-              // Like / Comment / Share row
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 12.0),
                 child: Row(
@@ -106,7 +130,6 @@ class PostCard extends StatelessWidget {
                       onPressed: () => viewModel.toggleLike(),
                     ),
                     Text('${viewModel.likeCount}'),
-
                     const SizedBox(width: 16),
                     IconButton(
                       icon: const Icon(Icons.comment),
@@ -129,12 +152,8 @@ class PostCard extends StatelessWidget {
                                 scrollController: scrollController,
                               );
                             },
-
                           ),
                         );
-
-                        // Refresh interaction state after commenting
-                        final viewModel = Provider.of<PostInteractionViewModel>(context, listen: false);
                         await viewModel.init();
                       },
                     ),
@@ -162,7 +181,7 @@ class PostCard extends StatelessWidget {
                             },
                           ),
                         );
-                        await viewModel.init(); // Refresh comment count
+                        await viewModel.init();
                       },
                     ),
                   ],
@@ -172,6 +191,28 @@ class PostCard extends StatelessWidget {
             ],
           );
         },
+      ),
+    );
+  }
+}
+
+// New screen for video post details
+class VideoPostDetailScreen extends StatelessWidget {
+  final PostModel post;
+
+  const VideoPostDetailScreen({Key? key, required this.post}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Video Post')),
+      body: SingleChildScrollView(
+        child: Column(
+          children: [
+            VideoPostCard(post: post, isThumbnailOnly: false),
+            // Add additional post details or interactions here if needed
+          ],
+        ),
       ),
     );
   }

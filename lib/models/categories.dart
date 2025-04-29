@@ -13,7 +13,7 @@ class SportCategories {
     'Golf',
     'Karate',
     'Surfing',
-    'Athletics'
+    'Athletics',
     'Cricket',
     'Baseball',
     'Rugby',

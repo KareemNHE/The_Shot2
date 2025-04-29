@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:the_shot2/views/post_share_screen.dart';
 import 'package:the_shot2/views/user_profile_screen.dart';
+import 'package:the_shot2/views/widgets/custom_video_player.dart';
 import '../models/post_model.dart';
 import '../viewmodels/post_interaction_viewmodel.dart';
 import 'comment_section_screen.dart';
@@ -60,13 +61,16 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
             post = PostModel(
               id: post.id,
               userId: post.userId,
-              username: userData['username'] ?? 'Unknown',
-              userProfilePic: userData['profile_picture'] ?? '',
+              username: userData?['username'] ?? 'Unknown',
+              userProfilePic: userData?['profile_picture'] ?? '',
               imageUrl: post.imageUrl,
+              videoUrl: post.videoUrl.isNotEmpty ? post.videoUrl : '',
+              thumbnailUrl: post.thumbnailUrl,
               caption: post.caption,
               timestamp: post.timestamp,
               hashtags: post.hashtags,
               category: post.category,
+              type: post.type.isNotEmpty ? post.type : 'image',
             );
           }
         }
@@ -157,7 +161,12 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Image.network(post.imageUrl, width: double.infinity, fit: BoxFit.cover),
+                post.videoUrl.isNotEmpty
+                    ? CustomVideoPlayer(videoUrl: post.videoUrl)
+                    : post.imageUrl.isNotEmpty
+                    ? Image.network(post.imageUrl, width: double.infinity, fit: BoxFit.cover)
+                    : const SizedBox(height: 200, child: Center(child: Icon(Icons.broken_image))),
+
                 Padding(
                   padding: const EdgeInsets.all(12.0),
                   child: Text(post.caption),

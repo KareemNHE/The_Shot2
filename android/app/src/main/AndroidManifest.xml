@@ -1,30 +1,33 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     package="com.example.the_shot2">
 
     <!-- CAMERA -->
+    <uses-feature android:name="android.hardware.camera" android:required="false"/>
     <uses-permission android:name="android.permission.CAMERA" />
 
-    <!-- MODERN storage permissions (Android 13+) -->
+    <!-- Legacy (Android <= 12) -->
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
+
+    <!-- Android 13+ -->
     <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
     <uses-permission android:name="android.permission.READ_MEDIA_VIDEO" />
     <uses-permission android:name="android.permission.READ_MEDIA_AUDIO" />
 
-    <!-- Optional -->
-    <uses-permission android:name="android.permission.VIBRATE" />
-    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
-    <uses-permission android:name="android.permission.INTERNET" />
-
-    <!-- REMOVE THESE OLD ONES 👇 -->
-    <!-- <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/> -->
-    <!-- <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/> -->
-    <!-- <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE" /> -->
+    <uses-permission android:name="android.permission.INTERNET"/>
+    <uses-permission android:name="android.permission.VIBRATE"/>
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
 
     <application
+        android:requestLegacyExternalStorage="true"
         android:label="the_shot2"
         android:icon="@mipmap/ic_launcher"
-        android:name="${applicationName}">
+        android:name="${applicationName}"
+        tools:ignore="ExtraText">
 
-        <!-- Main activity + your existing meta -->
+
+    <!-- Main activity + your existing meta -->
         <activity
             android:name=".MainActivity"
             android:exported="true"

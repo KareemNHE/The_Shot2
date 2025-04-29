@@ -5,7 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../viewmodels/captured_photo_viewmodel.dart';
 import 'camera_screen.dart';
-import 'create_post_screen.dart';
+import '../views/create_image_post_screen.dart';
+import 'package:the_shot2/viewmodels/create_post_viewmodel.dart';
 
 class CapturedPhotoScreen extends StatelessWidget {
   final String imagePath;
@@ -41,8 +42,7 @@ class CapturedPhotoScreen extends StatelessWidget {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) =>
-                            CreatePostScreen(imageUrl: downloadUrl),
+                        builder: (context) => CreateImagePostScreen(imagePath: imagePath),
                       ),
                     );
                   }

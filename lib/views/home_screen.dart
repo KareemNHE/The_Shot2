@@ -17,7 +17,7 @@ class HomeScreen extends StatelessWidget {
         titleTextStyle: const TextStyle(color: Colors.black),
         title: Image.asset(
           'assets/text.png',
-          height: 30,
+          height: 120,
         ),
         elevation: 0.0,
         actions: <Widget>[

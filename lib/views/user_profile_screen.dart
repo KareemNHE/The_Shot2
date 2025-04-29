@@ -1,10 +1,11 @@
 //views/user_profile_screen.dart
-
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:the_shot2/views/post_detail_screen.dart';
 import 'package:the_shot2/views/user_list_screen.dart';
+import 'package:the_shot2/views/widgets/video_post_card.dart';
+import 'package:the_shot2/views/widgets/post_card.dart'; // For VideoPostDetailScreen
 import '../viewmodels/user_profile_viewmodel.dart';
 import '../models/search_model.dart';
 import '../models/post_model.dart';
@@ -38,7 +39,7 @@ class UserProfileScreen extends StatelessWidget {
                 await viewModel.fetchUserProfile(userId);
               },
               child: SingleChildScrollView(
-                physics: const AlwaysScrollableScrollPhysics(), // ensures drag is always possible
+                physics: const AlwaysScrollableScrollPhysics(),
                 child: Column(
                   children: [
                     const SizedBox(height: 20),
@@ -47,9 +48,11 @@ class UserProfileScreen extends StatelessWidget {
                       backgroundImage: NetworkImage(user!.profile_picture),
                     ),
                     const SizedBox(height: 10),
-                    Text(user.username, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                    Text(user.username,
+                        style:
+                        const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                     Text(user.first_name + user.last_name),
-                    Text(user.bio, style: TextStyle(fontSize: 14)),
+                    Text(user.bio, style: const TextStyle(fontSize: 14)),
                     const SizedBox(height: 10),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
@@ -76,8 +79,9 @@ class UserProfileScreen extends StatelessWidget {
                           },
                           child: Column(
                             children: [
-                              Text('${viewModel.followersCount}', style: TextStyle(fontWeight: FontWeight.bold)),
-                              Text('Followers'),
+                              Text('${viewModel.followersCount}',
+                                  style: const TextStyle(fontWeight: FontWeight.bold)),
+                              const Text('Followers'),
                             ],
                           ),
                         ),
@@ -104,8 +108,9 @@ class UserProfileScreen extends StatelessWidget {
                           },
                           child: Column(
                             children: [
-                              Text('${viewModel.followingCount}', style: TextStyle(fontWeight: FontWeight.bold)),
-                              Text('Following'),
+                              Text('${viewModel.followingCount}',
+                                  style: const TextStyle(fontWeight: FontWeight.bold)),
+                              const Text('Following'),
                             ],
                           ),
                         ),
@@ -124,7 +129,7 @@ class UserProfileScreen extends StatelessWidget {
                             duration: const Duration(seconds: 2),
                           ),
                         );
-                        await viewModel.fetchUserProfile(userId); // Also refresh immediately on follow
+                        await viewModel.fetchUserProfile(userId);
                       },
                       child: Text(viewModel.isFollowing ? "Unfollow" : "Follow"),
                     ),
@@ -148,15 +153,25 @@ class UserProfileScreen extends StatelessWidget {
                             onTap: () {
                               Navigator.push(
                                 context,
-                                MaterialPageRoute(builder: (_) => PostDetailScreen(post: post)),
+                                MaterialPageRoute(
+                                  builder: (_) => post.type == 'video'
+                                      ? VideoPostDetailScreen(post: post)
+                                      : PostDetailScreen(post: post),
+                                ),
                               );
                             },
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(8),
-                              child: Image.network(
-                                post.imageUrl,
-                                fit: BoxFit.cover,
-                              ),
+                            child: post.type == 'video' && post.videoUrl.isNotEmpty
+                                ? VideoPostCard(post: post, isThumbnailOnly: true)
+                                : post.imageUrl.isNotEmpty
+                                ? Image.network(
+                              post.imageUrl,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) =>
+                              const Icon(Icons.broken_image),
+                            )
+                                : const SizedBox(
+                              height: 200,
+                              child: Center(child: Icon(Icons.broken_image)),
                             ),
                           ),
                         );

@@ -1,5 +1,4 @@
 //models/post_model.dart
-
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class PostModel {
@@ -8,10 +7,13 @@ class PostModel {
   final String username;
   final String userProfilePic;
   final String imageUrl;
+  final String videoUrl;
+  final String thumbnailUrl;
   final String caption;
   final DateTime timestamp;
   final List<String> hashtags;
   final String category;
+  final String type; // "image" or "video"
 
   PostModel({
     required this.id,
@@ -19,24 +21,44 @@ class PostModel {
     required this.username,
     required this.userProfilePic,
     required this.imageUrl,
+    required this.videoUrl,
+    required this.thumbnailUrl,
     required this.caption,
     required this.timestamp,
     required this.hashtags,
     required this.category,
+    required this.type,
   });
 
-  // Convert Firestore document to PostModel
   factory PostModel.fromFirestore(Map<String, dynamic> data, String id) {
     return PostModel(
       id: id,
       userId: data['userId'] ?? '',
       username: data['username'] ?? 'Unknown User',
       userProfilePic: data['userProfilePic'] ?? '',
-      imageUrl: data['imageUrl'] ?? '',
+      imageUrl: data['imageUrl'] ?? '', // just in case
+      videoUrl: data['videoUrl'] ?? '',
+      thumbnailUrl: data['thumbnailUrl'] ?? '',
       caption: data['caption'] ?? '',
-      timestamp: (data['timestamp'] as Timestamp).toDate(),
+      timestamp: (data['timestamp'] as Timestamp?)?.toDate() ?? DateTime.now(),
       hashtags: List<String>.from(data['hashtags'] ?? []),
       category: data['category'] ?? 'Uncategorized',
+      type: (data['type'] ?? 'video').toString(),
     );
+  }
+  Map<String, dynamic> toMap() {
+    return {
+      'userId': userId,
+      'username': username,
+      'userProfilePic': userProfilePic,
+      'imageUrl': imageUrl,
+      'videoUrl': videoUrl,
+      'thumbnailUrl': thumbnailUrl,
+      'caption': caption,
+      'timestamp': Timestamp.fromDate(timestamp),
+      'hashtags': hashtags,
+      'category': category,
+      'type': type,
+    };
   }
 }

@@ -53,11 +53,14 @@ class HomeViewModel extends ChangeNotifier {
             userId: id,
             username: userData?['username'] ?? 'Unknown',
             userProfilePic: userData?['profile_picture'] ?? '',
-            imageUrl: postData['imageUrl'],
-            caption: postData['caption'],
+            imageUrl: postData['imageUrl'] ?? '',
+            videoUrl: postData['videoUrl'] ?? '',
+            thumbnailUrl: postData['thumbnailUrl'] ?? '',
+            caption: postData['caption'] ?? '',
             timestamp: (postData['timestamp'] as Timestamp).toDate(),
             hashtags: List<String>.from(postData['hashtags'] ?? []),
             category: postData['category'] ?? 'Uncategorized',
+            type: postData['type'] ?? 'image',
           );
         }));
       }
@@ -66,24 +69,20 @@ class HomeViewModel extends ChangeNotifier {
     } catch (e) {
       print('Error fetching posts: $e');
     }
-
     _isLoading = false;
     notifyListeners();
   }
-
   //unction to get followed user IDs
   Future<List<String>> getFollowedUserIds() async {
     String? currentUserId = FirebaseAuth.instance.currentUser?.uid;
     if (currentUserId == null) {
       return [];
     }
-
     QuerySnapshot snapshot = await FirebaseFirestore.instance
         .collection('users')
         .doc(currentUserId)
         .collection('following')
         .get();
-
     return snapshot.docs.map((doc) => doc.id).toList();
   }
 }

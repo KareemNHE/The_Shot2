@@ -1,8 +1,4 @@
 //models/user_table_db.dart
-
-import 'dart:ffi';
-import 'package:flutter/cupertino.dart';
-
 final String tableUsers = 'users';
 
 class UserFields {

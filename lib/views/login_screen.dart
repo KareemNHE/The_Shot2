@@ -61,8 +61,8 @@ class _LoginState extends State<Login> {
               SizedBox(height: 50),
               Image.asset(
                 'assets/logo.png',
-                height: 100,
-                width: 100,
+                height: 300,
+                width: 300,
               ),
               MyTextField(
                 controller: _emailController,

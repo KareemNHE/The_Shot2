@@ -27,11 +27,15 @@ class SharedPostPreview extends StatelessWidget {
                 username: message.sharedPostOwnerUsername ?? '',
                 userProfilePic: message.sharedPostOwnerProfilePic ?? '',
                 imageUrl: message.sharedPostThumbnail ?? '',
+                videoUrl: '',
+                thumbnailUrl: '',
                 caption: message.sharedPostCaption ?? '',
                 timestamp: message.timestamp,
                 hashtags: [],
                 category: 'Uncategorized',
+                type: 'image',
               ),
+
             ),
           ),
         );
