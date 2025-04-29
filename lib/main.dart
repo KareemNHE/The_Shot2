@@ -1,4 +1,6 @@
 // main.dart
+import 'package:the_shot2/services/settings_service.dart';
+import 'package:the_shot2/viewmodels/settings_viewmodel.dart';
 import 'components/theme.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
@@ -19,7 +21,6 @@ import 'viewmodels/captured_photo_viewmodel.dart';
 import 'viewmodels/post_viewmodel.dart';
 import 'viewmodels/home_viewmodel.dart';
 import 'viewmodels/notification_viewmodel.dart';
-import 'package:firebase_app_check/firebase_app_check.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -48,19 +49,25 @@ class TheShot extends StatelessWidget {
         ChangeNotifierProvider(create: (context) => ProfileViewModel()),
         ChangeNotifierProvider(create: (_) => EditProfileViewModel()),
         ChangeNotifierProvider(create: (_) => SearchViewModel(apiService: ApiService()), child: const SearchScreen(),),
-        ChangeNotifierProvider(create: (_) => MessageListViewModel()..loadChats(), child: HomeScreen(),
-        ),
+        ChangeNotifierProvider(create: (_) => MessageListViewModel()..loadChats(), child: HomeScreen(),),
+        ChangeNotifierProvider(create: (_) => SettingsViewModel(settingsService: SettingsService(),)),
       ],
-      child: MaterialApp(
-        title: 'The Shot',
-        theme: appTheme,
-        debugShowCheckedModeBanner: false,
-        home: Login(), // Show login screen first
-        routes: {
-          '/home': (_) => const BottomNavBar(),
+      child: Consumer<SettingsViewModel>(
+        builder: (context, settingsViewModel, child) {
+          return MaterialApp(
+            title: 'The Shot',
+            theme: settingsViewModel.themePreference == 'dark'
+                ? AppTheme.darkTheme
+                : AppTheme.lightTheme,
+            debugShowCheckedModeBanner: false,
+            home: Login(),
+            routes: {
+              '/home': (_) => const BottomNavBar(),
+              '/login': (_) => Login(),
+            },
+          );
         },
       ),
-
     );
   }
 }

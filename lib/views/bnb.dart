@@ -1,6 +1,5 @@
 
 //views/bnb.dart
-
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:the_shot2/services/api_service.dart';
@@ -10,7 +9,6 @@ import 'package:the_shot2/views/search_screen.dart';
 import 'package:the_shot2/views/post_screen.dart';
 import 'package:the_shot2/views/market_screen.dart';
 import 'package:the_shot2/viewmodels/market_viewmodel.dart';
-
 import '../components/theme.dart';
 import '../viewmodels/profile_viewmodel.dart';
 

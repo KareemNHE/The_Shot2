@@ -11,6 +11,9 @@ class UserFields {
   static final String phone_num = 'phone_num';
   static final String address = 'address';
   static final String profile_picture = 'profile_picture';
+  static final String isPrivate = 'isPrivate';
+  static final String themePreference = 'themePreference';
+  static final String notificationSettings = 'notificationSettings';
 }
 
 class Users {
@@ -23,6 +26,9 @@ class Users {
   final int phone_num;
   final String address;
   final String profile_picture;
+  final bool isPrivate;
+  final String themePreference;
+  final Map<String, bool> notificationSettings;
 
   const Users({
     this.id,
@@ -34,6 +40,14 @@ class Users {
     required this.phone_num,
     required this.address,
     this.profile_picture = 'assets/default_profile.png',
+    this.isPrivate = false,
+    this.themePreference = 'light',
+    this.notificationSettings = const {
+      'likes': true,
+      'comments': true,
+      'follows': true,
+      'messages': true,
+    },
   });
 
   Users copy({
@@ -46,6 +60,9 @@ class Users {
     int? phone_num,
     String? address,
     String? profile_picture,
+    bool? isPrivate,
+    String? themePreference,
+    Map<String, bool>? notificationSettings,
   }) =>
       Users(
         id: id ?? this.id,
@@ -57,6 +74,9 @@ class Users {
         phone_num: phone_num ?? this.phone_num,
         address: address ?? this.address,
         profile_picture: profile_picture ?? this.profile_picture,
+        isPrivate: isPrivate ?? this.isPrivate,
+        themePreference: themePreference ?? this.themePreference,
+        notificationSettings: notificationSettings ?? this.notificationSettings,
       );
 
   Map<String, Object?> tojson() => {
@@ -69,7 +89,30 @@ class Users {
     UserFields.phone_num: phone_num,
     UserFields.address: address,
     UserFields.profile_picture: profile_picture,
+    UserFields.isPrivate: isPrivate,
+    UserFields.themePreference: themePreference,
+    UserFields.notificationSettings: notificationSettings,
   };
+
+  static Users fromJson(Map<String, dynamic> json) => Users(
+    id: json[UserFields.id] as int?,
+    first_name: json[UserFields.first_name] as String,
+    last_name: json[UserFields.last_name] as String,
+    username: json[UserFields.username] as String,
+    email: json[UserFields.email] as String,
+    password: json[UserFields.password] as String,
+    phone_num: json[UserFields.phone_num] as int,
+    address: json[UserFields.address] as String,
+    profile_picture: json[UserFields.profile_picture] as String? ?? 'assets/default_profile.png',
+    isPrivate: json[UserFields.isPrivate] as bool? ?? false,
+    themePreference: json[UserFields.themePreference] as String? ?? 'light',
+    notificationSettings: (json[UserFields.notificationSettings] as Map<String, dynamic>?)?.cast<String, bool>() ?? {
+      'likes': true,
+      'comments': true,
+      'follows': true,
+      'messages': true,
+    },
+  );
 
   // Method to print user data
   void printUserData(user) {
@@ -81,6 +124,9 @@ class Users {
     print('Phone Number: $phone_num');
     print('Address: $address');
     print('Address: $profile_picture');
+    print('Is Private: $isPrivate');
+    print('Theme Preference: $themePreference');
+    print('Notification Settings: $notificationSettings');
   }
 
 }

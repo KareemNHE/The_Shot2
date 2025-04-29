@@ -1,5 +1,4 @@
 //viewmodels/user_profile_viewmodel.dart
-
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -26,6 +25,17 @@ class UserProfileViewModel extends ChangeNotifier {
   int get followersCount => _followersCount;
   int get followingCount => _followingCount;
 
+  Future<bool> _isUserBlocked(String userId) async {
+    final currentUserId = FirebaseAuth.instance.currentUser?.uid;
+    if (currentUserId == null) return false;
+    final doc = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(currentUserId)
+        .collection('blockedUsers')
+        .doc(userId)
+        .get();
+    return doc.exists;
+  }
 
   Future<void> toggleFollow(String otherUserId) async {
     String? currentUserId = FirebaseAuth.instance.currentUser?.uid;
@@ -67,6 +77,15 @@ class UserProfileViewModel extends ChangeNotifier {
     notifyListeners();
 
     try {
+      // Check if user is blocked
+      if (await _isUserBlocked(userId)) {
+        _user = null;
+        _posts = [];
+        _isLoading = false;
+        notifyListeners();
+        return;
+      }
+
       // Fetch user data
       final userDoc = await FirebaseFirestore.instance.collection('users').doc(userId).get();
       if (userDoc.exists) {

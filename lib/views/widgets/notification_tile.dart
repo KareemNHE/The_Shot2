@@ -1,11 +1,6 @@
 //views/widgets/notification_tile.dart
-
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:the_shot2/models/notification_model.dart';
-import 'package:the_shot2/views/post_detail_screen.dart';
-import 'package:the_shot2/views/user_profile_screen.dart';
-import '../../viewmodels/notification_viewmodel.dart';
 
 class NotificationTile extends StatelessWidget {
   final AppNotification notification;

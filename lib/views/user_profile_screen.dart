@@ -1,11 +1,14 @@
 //views/user_profile_screen.dart
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:the_shot2/services/settings_service.dart';
+import 'package:the_shot2/viewmodels/settings_viewmodel.dart';
 import 'package:the_shot2/views/post_detail_screen.dart';
 import 'package:the_shot2/views/user_list_screen.dart';
 import 'package:the_shot2/views/widgets/video_post_card.dart';
-import 'package:the_shot2/views/widgets/post_card.dart'; // For VideoPostDetailScreen
+import 'package:the_shot2/views/widgets/post_card.dart';
 import '../viewmodels/user_profile_viewmodel.dart';
 import '../models/search_model.dart';
 import '../models/post_model.dart';
@@ -17,26 +20,51 @@ class UserProfileScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-      create: (_) => UserProfileViewModel()..fetchUserProfile(userId),
-      child: Consumer<UserProfileViewModel>(
-        builder: (context, viewModel, child) {
-          if (viewModel.isLoading) {
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => UserProfileViewModel()..fetchUserProfile(userId)),
+        ChangeNotifierProvider(create: (_) => SettingsViewModel(settingsService: SettingsService())),
+      ],
+      child: Consumer2<UserProfileViewModel, SettingsViewModel>(
+        builder: (context, profileViewModel, settingsViewModel, child) {
+          if (profileViewModel.isLoading || settingsViewModel.isLoading) {
             return const Scaffold(
               body: Center(child: CircularProgressIndicator()),
             );
           }
 
-          final user = viewModel.user;
-          final posts = viewModel.posts;
+          final user = profileViewModel.user;
+          final posts = profileViewModel.posts;
+          final currentUserId = FirebaseAuth.instance.currentUser?.uid;
+          final isBlocked = settingsViewModel.blockedUsers.any((u) => u.id == userId);
+
+          if (currentUserId != userId && isBlocked) {
+            return Scaffold(
+              appBar: AppBar(title: const Text('Profile')),
+              body: const Center(child: Text('This user is blocked.')),
+            );
+          }
 
           return Scaffold(
             appBar: AppBar(
               title: Text(user?.username ?? 'User'),
+              actions: currentUserId != userId
+                  ? [
+                IconButton(
+                  icon: const Icon(Icons.block),
+                  onPressed: () async {
+                    await settingsViewModel.unblockUser(userId);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Unblocked @${user?.username}')),
+                    );
+                  },
+                ),
+              ]
+                  : null,
             ),
             body: RefreshIndicator(
               onRefresh: () async {
-                await viewModel.fetchUserProfile(userId);
+                await profileViewModel.fetchUserProfile(userId);
               },
               child: SingleChildScrollView(
                 physics: const AlwaysScrollableScrollPhysics(),
@@ -48,10 +76,11 @@ class UserProfileScreen extends StatelessWidget {
                       backgroundImage: NetworkImage(user!.profile_picture),
                     ),
                     const SizedBox(height: 10),
-                    Text(user.username,
-                        style:
-                        const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                    Text(user.first_name + user.last_name),
+                    Text(
+                      user.username,
+                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    ),
+                    Text('${user.first_name} ${user.last_name}'),
                     Text(user.bio, style: const TextStyle(fontSize: 14)),
                     const SizedBox(height: 10),
                     Row(
@@ -64,22 +93,17 @@ class UserProfileScreen extends StatelessWidget {
                                 .doc(user.id)
                                 .collection('followers')
                                 .get();
-
                             final ids = snapshot.docs.map((doc) => doc.id).toList();
-
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (_) => UserListScreen(
-                                  title: "Followers",
-                                  userIds: ids,
-                                ),
+                                builder: (_) => UserListScreen(title: "Followers", userIds: ids),
                               ),
                             );
                           },
                           child: Column(
                             children: [
-                              Text('${viewModel.followersCount}',
+                              Text('${profileViewModel.followersCount}',
                                   style: const TextStyle(fontWeight: FontWeight.bold)),
                               const Text('Followers'),
                             ],
@@ -93,22 +117,17 @@ class UserProfileScreen extends StatelessWidget {
                                 .doc(user.id)
                                 .collection('following')
                                 .get();
-
                             final ids = snapshot.docs.map((doc) => doc.id).toList();
-
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (_) => UserListScreen(
-                                  title: "Following",
-                                  userIds: ids,
-                                ),
+                                builder: (_) => UserListScreen(title: "Following", userIds: ids),
                               ),
                             );
                           },
                           child: Column(
                             children: [
-                              Text('${viewModel.followingCount}',
+                              Text('${profileViewModel.followingCount}',
                                   style: const TextStyle(fontWeight: FontWeight.bold)),
                               const Text('Following'),
                             ],
@@ -116,23 +135,35 @@ class UserProfileScreen extends StatelessWidget {
                         ),
                       ],
                     ),
-                    ElevatedButton(
-                      onPressed: () async {
-                        await viewModel.toggleFollow(user.id);
-                        final msg = viewModel.isFollowing
-                            ? 'You are now following @${user.username}'
-                            : 'You unfollowed @${user.username}';
-
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(msg),
-                            duration: const Duration(seconds: 2),
-                          ),
-                        );
-                        await viewModel.fetchUserProfile(userId);
-                      },
-                      child: Text(viewModel.isFollowing ? "Unfollow" : "Follow"),
-                    ),
+                    const SizedBox(height: 10),
+                    if (currentUserId != userId) ...[
+                      ElevatedButton(
+                        onPressed: () async {
+                          await profileViewModel.toggleFollow(user.id);
+                          final msg = profileViewModel.isFollowing
+                              ? 'You are now following @${user.username}'
+                              : 'You unfollowed @${user.username}';
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text(msg), duration: const Duration(seconds: 2)),
+                          );
+                          await profileViewModel.fetchUserProfile(userId);
+                        },
+                        child: Text(profileViewModel.isFollowing ? "Unfollow" : "Follow"),
+                      ),
+                      const SizedBox(height: 5),
+                      ElevatedButton(
+                        onPressed: () async {
+                          await settingsViewModel.unblockUser(user.id);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('Blocked @${user.username}')),
+                          );
+                          await settingsViewModel.fetchSettings();
+                          Navigator.pop(context); // Return to previous screen
+                        },
+                        child: const Text('Block User'),
+                        style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                      ),
+                    ],
                     const Divider(height: 30),
                     GridView.builder(
                       shrinkWrap: true,
@@ -156,7 +187,7 @@ class UserProfileScreen extends StatelessWidget {
                                 MaterialPageRoute(
                                   builder: (_) => post.type == 'video'
                                       ? VideoPostDetailScreen(post: post)
-                                      : PostDetailScreen(post: post),
+                                      : PostDetailScreen(postId: post.id, postOwnerId: post.userId),
                                 ),
                               );
                             },

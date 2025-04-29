@@ -7,6 +7,7 @@ import 'package:the_shot2/views/edit_profile_screen.dart';
 import 'package:the_shot2/views/login_screen.dart';
 import 'package:the_shot2/viewmodels/profile_viewmodel.dart';
 import 'package:the_shot2/views/post_detail_screen.dart';
+import 'package:the_shot2/views/settings_screen.dart';
 import 'package:the_shot2/views/user_list_screen.dart';
 import 'package:the_shot2/views/widgets/video_post_card.dart';
 import 'package:the_shot2/views/widgets/post_card.dart';
@@ -207,10 +208,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildMenuItem(Icons.settings, 'Settings', () {}),
+              _buildMenuItem(Icons.settings, 'Settings', () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const SettingsScreen()),
+                );
+              }),
               _buildMenuItem(Icons.edit, 'Edit Profile', () async {
-                final result = await Navigator.of(context).push(
-                  MaterialPageRoute(builder: (context) => const EditProfileScreen()),
+                final result = await Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const EditProfileScreen()),
                 );
                 if (result == true) {
                   await Provider.of<ProfileViewModel>(context, listen: false)
@@ -221,8 +228,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
               _buildMenuItem(Icons.help, 'Help', () {}),
               _buildMenuItem(Icons.logout, 'Logout', () {
                 FirebaseAuth.instance.signOut();
-                Navigator.of(context).pushReplacement(
-                  MaterialPageRoute(builder: (context) => Login()),
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(builder: (_) => Login()),
                 );
               }),
             ],
